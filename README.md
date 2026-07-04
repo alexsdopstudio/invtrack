@@ -45,7 +45,7 @@ throttled well below their 10 req/s guidance.
 ```bash
 # backend
 cd backend
-python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+./setup.sh                            # creates .venv pinned to public PyPI (ignores corporate pip config)
 cp ../.env.example ../.env            # edit SEC_EDGAR_USER_AGENT
 .venv/bin/alembic upgrade head        # create the schema
 .venv/bin/python -m app.cli seed-demo # optional: synthetic demo data, no network
@@ -56,6 +56,15 @@ cd frontend
 npm install
 npm run dev                           # http://localhost:5173, proxies /api to :8000
 ```
+
+Working on a machine with corporate package registries (CodeArtifact,
+Artifactory, …)? This project stays isolated from them: `backend/setup.sh`
+writes a venv-scoped `pip.conf` pinned to public PyPI (and installs with the
+index pinned on the command line, which overrides env vars too), and
+`frontend/.npmrc` pins npm to the public registry. The only remaining
+gotcha is a globally exported `PIP_INDEX_URL`/`PIP_EXTRA_INDEX_URL` in your
+shell profile — that would override the venv config on later manual
+`pip install` runs, so unset it or scope it to work directories.
 
 ## Using Supabase
 
