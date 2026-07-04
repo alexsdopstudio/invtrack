@@ -21,6 +21,11 @@ EOF
 unset PIP_INDEX_URL PIP_EXTRA_INDEX_URL PIP_CONFIG_FILE 2>/dev/null || true
 .venv/bin/pip install --index-url https://pypi.org/simple -r requirements.txt
 
+# Create/upgrade the database schema (SQLite by default, or whatever
+# DATABASE_URL in ../.env points at — e.g. Supabase).
+.venv/bin/alembic upgrade head
+
 echo
-echo "Backend venv ready (backend/.venv), pinned to public PyPI."
-echo "Next: .venv/bin/alembic upgrade head && .venv/bin/uvicorn app.main:app --reload --port 8000"
+echo "Backend ready: venv pinned to public PyPI, database schema up to date."
+echo "Optional demo data:  .venv/bin/python -m app.cli seed-demo"
+echo "Run the API:         .venv/bin/uvicorn app.main:app --reload --port 8000"
