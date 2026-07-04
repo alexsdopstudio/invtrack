@@ -32,7 +32,7 @@ signal score (0–100) per ticker, with full provenance for every number.
 | Signal | Source | Notes |
 |---|---|---|
 | Ticker ↔ CIK map | [SEC company_tickers.json](https://www.sec.gov/files/company_tickers.json) | official |
-| Congressional trades | Senate / House Stock Watcher aggregate JSON | community-parsed STOCK Act disclosures; lagging ≤45 days |
+| Congressional trades | Senate / House Stock Watcher aggregate JSON | community-parsed STOCK Act disclosures; lagging ≤45 days. **Verified July 2026: both projects are defunct** (Senate S3 bucket returns 403, housestockwatcher.com no longer resolves) — see note below |
 | Insider trades (Form 4) | SEC EDGAR (`data.sec.gov` submissions + Form 4 XML) | official, filed within 2 business days |
 | Fundamentals & prices | yfinance | unofficial; failures isolated per ticker |
 
@@ -88,9 +88,18 @@ Or from the UI/API: `POST /api/ingest/all`. Each run is logged —
 `GET /api/ingest/runs` (or the UI's refresh status) shows per-source
 status/errors. Ingestion is failure-isolated at every level: chambers,
 tickers and individual filings are ingested independently, so e.g. the
-Senate dataset going offline still lets House trades land. If a Stock
-Watcher bucket moves or dies (they are community-maintained), override
-`SENATE_DATA_URL` / `HOUSE_DATA_URL` in `.env` with a mirror. Ingestion only pulls congress/insider/fundamentals/prices for
+Senate dataset going offline still lets House trades land.
+
+> **Congressional source status (verified July 2026):** both Stock Watcher
+> projects are dead — the Senate S3 bucket rejects requests and the House
+> domain no longer resolves; their GitHub data mirrors stopped updating years
+> ago. Until a replacement is wired in, the congress component reports
+> `missing` and the composite score renormalizes over insider + fundamentals
+> (both official SEC sources, still healthy). If you find a live mirror or a
+> free API with the same row schema, point `SENATE_DATA_URL` /
+> `HOUSE_DATA_URL` at it in `.env`. The durable fix on the roadmap is
+> ingesting the official sources directly (efdsearch.senate.gov HTML PTRs and
+> the House Clerk's financial-disclosure index). Ingestion only pulls congress/insider/fundamentals/prices for
 tickers on your watchlist to stay well inside free-tier rate limits.
 Re-run `ingest all` on whatever cadence you like (e.g. a daily cron) — jobs
 are idempotent.
