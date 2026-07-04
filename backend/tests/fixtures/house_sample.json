@@ -1,0 +1,44 @@
+[
+  {
+    "disclosure_year": 2026,
+    "disclosure_date": "02/04/2026",
+    "transaction_date": "2026-01-12",
+    "owner": "joint",
+    "ticker": "MSFT",
+    "asset_description": "Microsoft Corporation",
+    "type": "purchase",
+    "amount": "$1,001 - $15,000",
+    "representative": "Hon. Alex Smith",
+    "district": "CA12",
+    "ptr_link": "https://disclosures-clerk.house.gov/public_disc/ptr-pdfs/2026/example.pdf",
+    "cap_gains_over_200_usd": false
+  },
+  {
+    "disclosure_year": 2026,
+    "disclosure_date": "02/06/2026",
+    "transaction_date": "2026-01-18",
+    "owner": "self",
+    "ticker": "UNH",
+    "asset_description": "UnitedHealth Group Incorporated",
+    "type": "sale_full",
+    "amount": "$100,001 - $250,000",
+    "representative": "Hon. Bailey Jones",
+    "district": "TX07",
+    "ptr_link": "https://disclosures-clerk.house.gov/public_disc/ptr-pdfs/2026/example2.pdf",
+    "cap_gains_over_200_usd": true
+  },
+  {
+    "disclosure_year": 2026,
+    "disclosure_date": "02/06/2026",
+    "transaction_date": "not-a-date",
+    "owner": "self",
+    "ticker": "UNH",
+    "asset_description": "bad row: unparseable date",
+    "type": "sale_full",
+    "amount": "$1,001 -",
+    "representative": "Hon. Bailey Jones",
+    "district": "TX07",
+    "ptr_link": "",
+    "cap_gains_over_200_usd": false
+  }
+]

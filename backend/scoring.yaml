@@ -1,0 +1,43 @@
+# Composite score configuration. All weights and thresholds are meant to be
+# tuned — this is a research aid, not a black box. Weights are renormalized at
+# runtime across the components that actually have data for a ticker.
+
+weights:
+  fundamentals: 0.40
+  congress: 0.35
+  insider: 0.25
+
+congress:
+  # Congressional disclosures are legally delayed up to 45 days (STOCK Act),
+  # so this is a lagging signal: recency decay is applied on disclosure_date.
+  lookback_days: 90
+  decay_half_life_days: 30
+  # Net decayed dollars (buy midpoints minus sell midpoints) are squashed with
+  # tanh(net / dollar_scale): at +/- dollar_scale the signal is ~76% saturated.
+  dollar_scale: 250000
+  # Bonus points (on the 0-100 sub-score) when >= cluster_min_members distinct
+  # members traded the same direction within cluster_window_days.
+  cluster_min_members: 3
+  cluster_window_days: 30
+  cluster_bonus: 10
+
+insider:
+  lookback_days: 90
+  decay_half_life_days: 30
+  dollar_scale: 1000000
+  # Insider selling is noisy (diversification, taxes, 10b5-1 plans), so sell
+  # dollars are discounted relative to open-market buys.
+  sell_discount: 0.5
+  cluster_min_insiders: 2
+  cluster_window_days: 30
+  cluster_bonus: 10
+
+fundamentals:
+  # Each metric maps to a band sub-score (excellent=90, good=70, weak=40,
+  # below weak=20); available metrics are averaged. Missing metrics are
+  # skipped, never treated as zero.
+  revenue_growth_yoy: { excellent: 0.20, good: 0.10, weak: 0.0 }
+  operating_margin: { excellent: 0.25, good: 0.15, weak: 0.05 }
+  # For these two, lower is better.
+  debt_to_equity: { excellent: 0.5, good: 1.0, weak: 2.0 }
+  pe: { excellent: 15, good: 25, weak: 40 }

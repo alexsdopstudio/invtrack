@@ -1,0 +1,130 @@
+from datetime import date, datetime
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class TickerSearchResult(BaseModel):
+    ticker: str
+    name: str | None
+    cik: str | None
+    on_watchlist: bool = False
+
+
+class WatchlistCreate(BaseModel):
+    ticker: str = Field(min_length=1, max_length=12)
+    notes: str | None = None
+
+
+class WatchlistUpdate(BaseModel):
+    notes: str | None = None
+
+
+class WatchlistItemOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    ticker: str
+    notes: str | None
+    added_at: datetime
+
+
+class CongressTradeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    chamber: str
+    member: str
+    ticker: str
+    transaction_date: date
+    disclosure_date: date | None
+    tx_type: str
+    amount_low: float | None
+    amount_high: float | None
+    source: str
+    ingested_at: datetime
+
+
+class InsiderTradeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    accession_no: str
+    ticker: str
+    insider_name: str | None
+    insider_title: str | None
+    is_officer: bool | None
+    is_director: bool | None
+    transaction_date: date
+    code: str
+    shares: float | None
+    price: float | None
+    value: float | None
+    source: str
+    ingested_at: datetime
+
+
+class PricePoint(BaseModel):
+    date: date
+    close: float | None
+
+
+class FundamentalsOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    ticker: str
+    as_of: date
+    revenue_growth_yoy: float | None
+    gross_margin: float | None
+    operating_margin: float | None
+    debt_to_equity: float | None
+    pe: float | None
+    forward_pe: float | None
+    market_cap: float | None
+    source: str
+    ingested_at: datetime
+
+
+class ScoreOut(BaseModel):
+    ticker: str
+    total: float | None
+    computed_at: datetime | None
+    components: dict[str, Any] | None
+
+
+class DashboardRow(BaseModel):
+    ticker: str
+    name: str | None
+    sector: str | None
+    notes: str | None
+    score: float | None
+    score_computed_at: datetime | None
+    components: dict[str, Any] | None
+    last_close: float | None
+    last_congress_activity: date | None
+    last_insider_activity: date | None
+    sparkline: list[float]
+
+
+class TickerDetail(BaseModel):
+    ticker: str
+    name: str | None
+    sector: str | None
+    cik: str | None
+    on_watchlist: bool
+    notes: str | None
+    fundamentals: FundamentalsOut | None
+    score: ScoreOut | None
+
+
+class IngestionRunOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    source: str
+    started_at: datetime
+    finished_at: datetime | None
+    status: str
+    rows_upserted: int
+    error: str | None
+
+
+class IngestRequest(BaseModel):
+    sources: list[str] | None = None

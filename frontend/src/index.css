@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+/* Viz + chrome roles from the validated reference palette; dark mode is its
+   own selected steps, not an automatic flip. */
+:root {
+  --surface-1: #fcfcfb;
+  --page: #f9f9f7;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --baseline: #c3c2b7;
+  --hairline: rgba(11, 11, 11, 0.1);
+  --series-1: #2a78d6; /* fundamentals */
+  --series-2: #1baf7a; /* congress */
+  --series-3: #eda100; /* insider */
+  --div-pos: #2a78d6; /* diverging pole: bullish */
+  --div-neg: #e34948; /* diverging pole: bearish */
+  --div-mid: #f0efec; /* diverging neutral */
+  --delta-good: #006300;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --baseline: #383835;
+    --hairline: rgba(255, 255, 255, 0.1);
+    --series-1: #3987e5;
+    --series-2: #199e70;
+    --series-3: #c98500;
+    --div-pos: #3987e5;
+    --div-neg: #e66767;
+    --div-mid: #383835;
+    --delta-good: #0ca30c;
+  }
+}
+
+@theme inline {
+  --color-surface: var(--surface-1);
+  --color-page: var(--page);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-grid: var(--grid);
+  --color-baseline: var(--baseline);
+  --color-hairline: var(--hairline);
+  --color-series-1: var(--series-1);
+  --color-series-2: var(--series-2);
+  --color-series-3: var(--series-3);
+  --color-div-pos: var(--div-pos);
+  --color-div-neg: var(--div-neg);
+  --color-div-mid: var(--div-mid);
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+body {
+  background: var(--page);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
