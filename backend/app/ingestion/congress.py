@@ -6,24 +6,20 @@ Disclosures are legally delayed up to 45 days, so this is a lagging signal.
 Only trades for tickers currently on the watchlist are stored.
 """
 
+import logging
 import re
 from datetime import date, datetime
 from typing import Any
 
+import httpx
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ..config import get_settings
 from ..models import FactCongressTrade, WatchlistItem
 from . import http
 
-SENATE_URL = (
-    "https://senate-stock-watcher-data.s3-us-west-2.amazonaws.com"
-    "/aggregate/all_transactions.json"
-)
-HOUSE_URL = (
-    "https://house-stock-watcher-data.s3-us-west-2.amazonaws.com"
-    "/data/all_transactions.json"
-)
+logger = logging.getLogger(__name__)
 
 _AMOUNT_RE = re.compile(r"\$?([\d,]+)")
 
@@ -120,15 +116,35 @@ def upsert_trades(db: Session, rows: list[dict[str, Any]]) -> int:
     return count
 
 
+def fetch_chamber_rows(client: httpx.Client, chamber: str, url: str) -> list[dict[str, Any]]:
+    payload = client.get(url).raise_for_status().json()
+    return parse_stock_watcher_rows(payload, chamber)
+
+
 def ingest(db: Session) -> int:
     watchlist = set(db.scalars(select(WatchlistItem.ticker)))
     if not watchlist:
         return 0
+    settings = get_settings()
+    sources = (("senate", settings.senate_data_url), ("house", settings.house_data_url))
     count = 0
+    errors = []
+    any_success = False
     with http.client() as client:
-        for chamber, url in (("senate", SENATE_URL), ("house", HOUSE_URL)):
-            payload = client.get(url).raise_for_status().json()
-            rows = parse_stock_watcher_rows(payload, chamber)
-            rows = [r for r in rows if r["ticker"] in watchlist]
-            count += upsert_trades(db, rows)
+        # Each chamber is isolated: these community datasets go stale or
+        # disappear independently, and one dying must not block the other.
+        for chamber, url in sources:
+            try:
+                rows = fetch_chamber_rows(client, chamber, url)
+                count += upsert_trades(db, [r for r in rows if r["ticker"] in watchlist])
+                any_success = True
+            except Exception as exc:  # noqa: BLE001 - per-chamber isolation
+                logger.warning("congress ingest failed for %s (%s): %s", chamber, url, exc)
+                errors.append(f"{chamber}: {exc}")
+    if errors and not any_success:
+        raise RuntimeError(
+            "all congressional sources failed — the community Stock Watcher datasets "
+            "may be unavailable; override SENATE_DATA_URL / HOUSE_DATA_URL in .env "
+            f"if they have moved. ({'; '.join(errors)})"
+        )
     return count

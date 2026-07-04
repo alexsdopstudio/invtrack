@@ -5,15 +5,19 @@ watchlist ticker we resolve its CIK (dim_ticker), pull the company's recent
 submissions index from data.sec.gov, and parse the Form 4 XML documents.
 """
 
+import logging
 import xml.etree.ElementTree as ET
 from datetime import date, datetime, timedelta
 from typing import Any
 
+import httpx
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..models import DimTicker, FactInsiderTrade, WatchlistItem
 from . import http
+
+logger = logging.getLogger(__name__)
 
 SUBMISSIONS_URL = "https://data.sec.gov/submissions/CIK{cik}.json"
 ARCHIVES_URL = "https://www.sec.gov/Archives/edgar/data/{cik_int}/{accession_nodash}/{doc}"
@@ -46,6 +50,54 @@ def recent_form4_filings(
         if len(out) >= limit:
             break
     return out
+
+
+def doc_candidates(primary_doc: str) -> list[str]:
+    """EDGAR's primaryDocument for a Form 4 often points at the XSL-rendered
+    HTML view (e.g. 'xslF345X05/wk-form4.xml'), which is not parseable XML.
+    The raw ownership XML is the same filename at the accession root, so try
+    the basename first."""
+    base = primary_doc.rpartition("/")[2]
+    return [base] if base == primary_doc else [base, primary_doc]
+
+
+def list_xml_docs(index_payload: dict[str, Any]) -> list[str]:
+    """Fallback: raw .xml documents from an accession's index.json listing."""
+    items = index_payload.get("directory", {}).get("item", [])
+    return [
+        i["name"]
+        for i in items
+        if i.get("name", "").endswith(".xml") and not i["name"].startswith("xsl")
+    ]
+
+
+def _fetch_form4_rows(
+    client: httpx.Client, cik_int: int, accession_nodash: str, filing: dict[str, str]
+) -> list[dict[str, Any]]:
+    def url_for(doc: str) -> str:
+        return ARCHIVES_URL.format(cik_int=cik_int, accession_nodash=accession_nodash, doc=doc)
+
+    candidates = doc_candidates(filing["primary_doc"])
+    last_error: Exception | None = None
+    for doc in candidates:
+        try:
+            xml_text = http.sec_get(client, url_for(doc)).text
+            return parse_form4_xml(xml_text, filing["accession_no"])
+        except (ET.ParseError, httpx.HTTPError) as exc:
+            last_error = exc
+    # Last resort: scan the accession's file listing for the raw XML doc.
+    index_payload = http.sec_get(client, url_for("index.json")).json()
+    for doc in list_xml_docs(index_payload):
+        if doc in candidates:
+            continue
+        try:
+            xml_text = http.sec_get(client, url_for(doc)).text
+            return parse_form4_xml(xml_text, filing["accession_no"])
+        except (ET.ParseError, httpx.HTTPError) as exc:
+            last_error = exc
+    raise RuntimeError(
+        f"no parseable Form 4 XML found for {filing['accession_no']}: {last_error}"
+    )
 
 
 def _text(el: ET.Element | None) -> str | None:
@@ -136,24 +188,37 @@ def ingest(db: Session) -> int:
         select(DimTicker).join(WatchlistItem, WatchlistItem.ticker == DimTicker.ticker)
     ).all()
     count = 0
+    errors = []
+    any_success = False
     with http.client() as client:
         for t in tickers:
             if not t.cik:
                 continue
-            submissions = http.sec_get(
-                client, SUBMISSIONS_URL.format(cik=t.cik)
-            ).json()
-            for filing in recent_form4_filings(submissions, since):
+            try:
+                submissions = http.sec_get(
+                    client, SUBMISSIONS_URL.format(cik=t.cik)
+                ).json()
+                filings = recent_form4_filings(submissions, since)
+            except Exception as exc:  # noqa: BLE001 - per-ticker isolation
+                logger.warning("insider submissions failed for %s: %s", t.ticker, exc)
+                errors.append(f"{t.ticker}: {exc}")
+                continue
+            for filing in filings:
                 accession_nodash = filing["accession_no"].replace("-", "")
-                url = ARCHIVES_URL.format(
-                    cik_int=int(t.cik),
-                    accession_nodash=accession_nodash,
-                    doc=filing["primary_doc"],
-                )
-                xml_text = http.sec_get(client, url).text
-                rows = parse_form4_xml(xml_text, filing["accession_no"])
+                try:
+                    rows = _fetch_form4_rows(client, int(t.cik), accession_nodash, filing)
+                except Exception as exc:  # noqa: BLE001 - per-filing isolation
+                    logger.warning(
+                        "insider filing %s failed for %s: %s",
+                        filing["accession_no"], t.ticker, exc,
+                    )
+                    errors.append(f"{t.ticker}/{filing['accession_no']}: {exc}")
+                    continue
                 # Form 4s are filed under the issuer's CIK, so the symbol
                 # should match; keep it as a guard anyway.
                 rows = [r for r in rows if r["ticker"] == t.ticker]
                 count += upsert_insider_trades(db, rows)
+                any_success = True
+    if errors and not any_success:
+        raise RuntimeError("; ".join(errors[:5]))
     return count

@@ -2,7 +2,11 @@ import json
 from datetime import date
 from pathlib import Path
 
+import pytest
+
+from app.ingestion import congress
 from app.ingestion.congress import parse_stock_watcher_rows, upsert_trades
+from app.models import FactCongressTrade, WatchlistItem
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -45,3 +49,32 @@ def test_upsert_is_idempotent(db):
     rows = parse_stock_watcher_rows(load("senate_sample.json"), "senate")
     assert upsert_trades(db, rows) == 2
     assert upsert_trades(db, rows) == 0
+
+
+def _watch(db, ticker):
+    db.add(WatchlistItem(ticker=ticker))
+    db.commit()
+
+
+def test_ingest_survives_one_chamber_failing(db, monkeypatch):
+    _watch(db, "MSFT")
+
+    def fake_fetch(client, chamber, url):
+        if chamber == "senate":
+            raise RuntimeError("403 Forbidden")
+        return parse_stock_watcher_rows(load("house_sample.json"), chamber)
+
+    monkeypatch.setattr(congress, "fetch_chamber_rows", fake_fetch)
+    assert congress.ingest(db) == 1  # the MSFT house trade still lands
+    assert db.query(FactCongressTrade).count() == 1
+
+
+def test_ingest_raises_when_all_chambers_fail(db, monkeypatch):
+    _watch(db, "MSFT")
+
+    def fake_fetch(client, chamber, url):
+        raise RuntimeError("403 Forbidden")
+
+    monkeypatch.setattr(congress, "fetch_chamber_rows", fake_fetch)
+    with pytest.raises(RuntimeError, match="SENATE_DATA_URL"):
+        congress.ingest(db)

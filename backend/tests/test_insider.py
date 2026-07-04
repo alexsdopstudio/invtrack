@@ -2,6 +2,8 @@ from datetime import date
 from pathlib import Path
 
 from app.ingestion.insider import (
+    doc_candidates,
+    list_xml_docs,
     parse_form4_xml,
     recent_form4_filings,
     upsert_insider_trades,
@@ -43,6 +45,30 @@ def test_recent_form4_filings_filters_by_form_and_date():
     }
     filings = recent_form4_filings(submissions, since=date(2026, 1, 1))
     assert [f["accession_no"] for f in filings] == ["a-1", "a-4"]
+
+
+def test_doc_candidates_strips_xsl_rendering_prefix():
+    # EDGAR's primaryDocument often points at the XSL-rendered HTML view;
+    # the raw XML is the basename at the accession root.
+    assert doc_candidates("xslF345X05/wk-form4_123.xml") == [
+        "wk-form4_123.xml",
+        "xslF345X05/wk-form4_123.xml",
+    ]
+    assert doc_candidates("form4.xml") == ["form4.xml"]
+
+
+def test_list_xml_docs_skips_xsl_renderings():
+    index_payload = {
+        "directory": {
+            "item": [
+                {"name": "0001234567-26-000001-index.htm"},
+                {"name": "xslF345X05/wk-form4_123.xml"},
+                {"name": "wk-form4_123.xml"},
+                {"name": "form4.pdf"},
+            ]
+        }
+    }
+    assert list_xml_docs(index_payload) == ["wk-form4_123.xml"]
 
 
 def test_upsert_insider_is_idempotent(db):

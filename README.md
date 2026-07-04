@@ -86,7 +86,11 @@ cd backend
 
 Or from the UI/API: `POST /api/ingest/all`. Each run is logged —
 `GET /api/ingest/runs` (or the UI's refresh status) shows per-source
-status/errors. Ingestion only pulls congress/insider/fundamentals/prices for
+status/errors. Ingestion is failure-isolated at every level: chambers,
+tickers and individual filings are ingested independently, so e.g. the
+Senate dataset going offline still lets House trades land. If a Stock
+Watcher bucket moves or dies (they are community-maintained), override
+`SENATE_DATA_URL` / `HOUSE_DATA_URL` in `.env` with a mirror. Ingestion only pulls congress/insider/fundamentals/prices for
 tickers on your watchlist to stay well inside free-tier rate limits.
 Re-run `ingest all` on whatever cadence you like (e.g. a daily cron) — jobs
 are idempotent.
