@@ -1,7 +1,11 @@
-"""Senate/House Stock Watcher aggregate JSON -> fact_congress_trade.
+"""Congressional trades -> fact_congress_trade.
 
-These community-maintained datasets parse the official STOCK Act disclosures
-(efdsearch.senate.gov / disclosures-clerk.house.gov) into structured JSON.
+Senate: official efdsearch.senate.gov PTRs (see senate_efd.py) — the
+community Stock Watcher dataset is defunct (verified July 2026).
+House: Stock Watcher-shaped aggregate JSON, URL overridable via
+HOUSE_DATA_URL (the original bucket is also defunct; official House PTRs are
+PDFs and need a dedicated parser — roadmap).
+
 Disclosures are legally delayed up to 45 days, so this is a lagging signal.
 Only trades for tickers currently on the watchlist are stored.
 """
@@ -17,7 +21,7 @@ from sqlalchemy.orm import Session
 
 from ..config import get_settings
 from ..models import FactCongressTrade, WatchlistItem
-from . import http
+from . import http, senate_efd
 
 logger = logging.getLogger(__name__)
 
@@ -121,30 +125,37 @@ def fetch_chamber_rows(client: httpx.Client, chamber: str, url: str) -> list[dic
     return parse_stock_watcher_rows(payload, chamber)
 
 
+def fetch_senate_rows(client: httpx.Client) -> list[dict[str, Any]]:
+    return parse_stock_watcher_rows(senate_efd.fetch_rows(client), "senate")
+
+
+def fetch_house_rows(client: httpx.Client) -> list[dict[str, Any]]:
+    return fetch_chamber_rows(client, "house", get_settings().house_data_url)
+
+
 def ingest(db: Session) -> int:
     watchlist = set(db.scalars(select(WatchlistItem.ticker)))
     if not watchlist:
         return 0
-    settings = get_settings()
-    sources = (("senate", settings.senate_data_url), ("house", settings.house_data_url))
+    sources = (("senate", fetch_senate_rows), ("house", fetch_house_rows))
     count = 0
     errors = []
     any_success = False
     with http.client() as client:
-        # Each chamber is isolated: these community datasets go stale or
-        # disappear independently, and one dying must not block the other.
-        for chamber, url in sources:
+        # Chambers are isolated: sources fail independently, and one dying
+        # must not block the other.
+        for chamber, fetch in sources:
             try:
-                rows = fetch_chamber_rows(client, chamber, url)
+                rows = fetch(client)
                 count += upsert_trades(db, [r for r in rows if r["ticker"] in watchlist])
                 any_success = True
             except Exception as exc:  # noqa: BLE001 - per-chamber isolation
-                logger.warning("congress ingest failed for %s (%s): %s", chamber, url, exc)
+                logger.warning("congress ingest failed for %s: %s", chamber, exc)
                 errors.append(f"{chamber}: {exc}")
     if errors and not any_success:
         raise RuntimeError(
-            "all congressional sources failed — the community Stock Watcher datasets "
-            "may be unavailable; override SENATE_DATA_URL / HOUSE_DATA_URL in .env "
-            f"if they have moved. ({'; '.join(errors)})"
+            "all congressional sources failed — senate reads the official "
+            "efdsearch.senate.gov; house needs HOUSE_DATA_URL pointed at a live "
+            f"Stock Watcher-shaped dataset. ({'; '.join(errors)})"
         )
     return count

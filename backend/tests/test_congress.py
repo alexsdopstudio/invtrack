@@ -56,25 +56,25 @@ def _watch(db, ticker):
     db.commit()
 
 
+def _fail(client):
+    raise RuntimeError("403 Forbidden")
+
+
 def test_ingest_survives_one_chamber_failing(db, monkeypatch):
     _watch(db, "MSFT")
-
-    def fake_fetch(client, chamber, url):
-        if chamber == "senate":
-            raise RuntimeError("403 Forbidden")
-        return parse_stock_watcher_rows(load("house_sample.json"), chamber)
-
-    monkeypatch.setattr(congress, "fetch_chamber_rows", fake_fetch)
+    monkeypatch.setattr(congress, "fetch_senate_rows", _fail)
+    monkeypatch.setattr(
+        congress,
+        "fetch_house_rows",
+        lambda client: parse_stock_watcher_rows(load("house_sample.json"), "house"),
+    )
     assert congress.ingest(db) == 1  # the MSFT house trade still lands
     assert db.query(FactCongressTrade).count() == 1
 
 
 def test_ingest_raises_when_all_chambers_fail(db, monkeypatch):
     _watch(db, "MSFT")
-
-    def fake_fetch(client, chamber, url):
-        raise RuntimeError("403 Forbidden")
-
-    monkeypatch.setattr(congress, "fetch_chamber_rows", fake_fetch)
-    with pytest.raises(RuntimeError, match="SENATE_DATA_URL"):
+    monkeypatch.setattr(congress, "fetch_senate_rows", _fail)
+    monkeypatch.setattr(congress, "fetch_house_rows", _fail)
+    with pytest.raises(RuntimeError, match="all congressional sources failed"):
         congress.ingest(db)

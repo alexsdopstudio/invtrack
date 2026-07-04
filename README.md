@@ -32,7 +32,8 @@ signal score (0–100) per ticker, with full provenance for every number.
 | Signal | Source | Notes |
 |---|---|---|
 | Ticker ↔ CIK map | [SEC company_tickers.json](https://www.sec.gov/files/company_tickers.json) | official |
-| Congressional trades | Senate / House Stock Watcher aggregate JSON | community-parsed STOCK Act disclosures; lagging ≤45 days. **Verified July 2026: both projects are defunct** (Senate S3 bucket returns 403, housestockwatcher.com no longer resolves) — see note below |
+| Senate trades | official [efdsearch.senate.gov](https://efdsearch.senate.gov) PTRs | electronic filings parsed directly from the Senate's search system; lagging ≤45 days by law |
+| House trades | Stock Watcher-shaped JSON via `HOUSE_DATA_URL` | original community bucket defunct (July 2026); official House PTRs are PDFs — see note below |
 | Insider trades (Form 4) | SEC EDGAR (`data.sec.gov` submissions + Form 4 XML) | official, filed within 2 business days |
 | Fundamentals & prices | yfinance | unofficial; failures isolated per ticker |
 
@@ -90,16 +91,17 @@ status/errors. Ingestion is failure-isolated at every level: chambers,
 tickers and individual filings are ingested independently, so e.g. the
 Senate dataset going offline still lets House trades land.
 
-> **Congressional source status (verified July 2026):** both Stock Watcher
-> projects are dead — the Senate S3 bucket rejects requests and the House
-> domain no longer resolves; their GitHub data mirrors stopped updating years
-> ago. Until a replacement is wired in, the congress component reports
-> `missing` and the composite score renormalizes over insider + fundamentals
-> (both official SEC sources, still healthy). If you find a live mirror or a
-> free API with the same row schema, point `SENATE_DATA_URL` /
-> `HOUSE_DATA_URL` at it in `.env`. The durable fix on the roadmap is
-> ingesting the official sources directly (efdsearch.senate.gov HTML PTRs and
-> the House Clerk's financial-disclosure index). Ingestion only pulls congress/insider/fundamentals/prices for
+> **Congressional source status (July 2026):** the community Stock Watcher
+> projects are dead, so **senate trades are now ingested from the official
+> efdsearch.senate.gov directly** — session/CSRF handshake, paged PTR search
+> over the lookback window, and per-report HTML table parsing (paper filings
+> are scanned images and skipped). **House trades remain without a live free
+> source**: official House PTRs are PDFs on disclosures-clerk.house.gov and
+> need a dedicated PDF parser (roadmap). Until then the house side reports an
+> error in the run log, the senate side still lands, and if both chambers are
+> ever empty the composite score renormalizes over insider + fundamentals. If
+> you find a live Stock Watcher-shaped mirror for house data, set
+> `HOUSE_DATA_URL` in `.env`. Ingestion only pulls congress/insider/fundamentals/prices for
 tickers on your watchlist to stay well inside free-tier rate limits.
 Re-run `ingest all` on whatever cadence you like (e.g. a daily cron) — jobs
 are idempotent.

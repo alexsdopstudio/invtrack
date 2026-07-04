@@ -24,12 +24,9 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
 
-    # Community-maintained congressional trade datasets. Overridable so a
-    # mirror can be swapped in without a code change if a bucket goes away.
-    senate_data_url: str = (
-        "https://senate-stock-watcher-data.s3-us-west-2.amazonaws.com"
-        "/aggregate/all_transactions.json"
-    )
+    # House trades: Stock Watcher-shaped JSON. The original bucket is defunct
+    # (verified July 2026) — point this at any live mirror with the same row
+    # schema. Senate uses the official efdsearch.senate.gov directly.
     house_data_url: str = (
         "https://house-stock-watcher-data.s3-us-west-2.amazonaws.com"
         "/data/all_transactions.json"

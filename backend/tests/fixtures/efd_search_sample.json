@@ -1,0 +1,29 @@
+{
+  "draw": 1,
+  "recordsTotal": 3,
+  "recordsFiltered": 3,
+  "result": "ok",
+  "data": [
+    [
+      "Jane",
+      "Doe",
+      "Doe, Jane (Senator)",
+      "<a href=\"/search/view/ptr/abcd1234-0000-1111-2222-333344445555/\" target=\"_blank\">Periodic Transaction Report for 06/20/2026</a>",
+      "06/25/2026"
+    ],
+    [
+      "John",
+      "Roe",
+      "Roe, John (Senator)",
+      "<a href=\"/search/view/paper/99998888-7777-6666-5555-444433332222/\" target=\"_blank\">Periodic Transaction Report (paper)</a>",
+      "06/22/2026"
+    ],
+    [
+      "Alex",
+      "Poe",
+      "Poe, Alex (Senator)",
+      "<a href=\"/search/view/ptr/deadbeef-1111-2222-3333-444455556666/\" target=\"_blank\">Periodic Transaction Report for 06/12/2026</a>",
+      "06/15/2026"
+    ]
+  ]
+}

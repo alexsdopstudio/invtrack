@@ -8,8 +8,8 @@ import httpx
 
 from ..config import get_settings
 
-SEC_MIN_INTERVAL_SECONDS = 0.5
-_last_sec_request = 0.0
+MIN_INTERVAL_SECONDS = 0.5
+_last_request = 0.0
 
 
 def client() -> httpx.Client:
@@ -20,13 +20,19 @@ def client() -> httpx.Client:
     )
 
 
-def sec_get(http: httpx.Client, url: str) -> httpx.Response:
-    """GET against sec.gov/data.sec.gov with polite throttling."""
-    global _last_sec_request
-    wait = SEC_MIN_INTERVAL_SECONDS - (time.monotonic() - _last_sec_request)
+def throttle() -> None:
+    """Global polite throttle for government sites (sec.gov asks <=10 req/s;
+    we stay far below for every source)."""
+    global _last_request
+    wait = MIN_INTERVAL_SECONDS - (time.monotonic() - _last_request)
     if wait > 0:
         time.sleep(wait)
-    _last_sec_request = time.monotonic()
+    _last_request = time.monotonic()
+
+
+def sec_get(http: httpx.Client, url: str) -> httpx.Response:
+    """GET against sec.gov/data.sec.gov with polite throttling."""
+    throttle()
     resp = http.get(url)
     resp.raise_for_status()
     return resp
