@@ -68,7 +68,7 @@ def compute(db: Session, ticker: str, config: dict[str, Any], today: date) -> di
     latest = max(t.disclosure_date or t.transaction_date for t in trades)
     return {
         "score": max(0.0, min(100.0, score)),
-        "source": "senate/house stock watcher (STOCK Act disclosures)",
+        "source": "official STOCK Act disclosures (efdsearch.senate.gov / house dataset)",
         "data_as_of": latest.isoformat(),
         "inputs": {
             "trades_in_window": len(trades),

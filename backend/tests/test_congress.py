@@ -68,8 +68,9 @@ def test_ingest_survives_one_chamber_failing(db, monkeypatch):
         "fetch_house_rows",
         lambda client: parse_stock_watcher_rows(load("house_sample.json"), "house"),
     )
-    assert congress.ingest(db) == 1  # the MSFT house trade still lands
-    assert db.query(FactCongressTrade).count() == 1
+    # both house fixture trades land (storage is market-wide for discovery)
+    assert congress.ingest(db) == 2
+    assert db.query(FactCongressTrade).count() == 2
 
 
 def test_ingest_raises_when_all_chambers_fail(db, monkeypatch):

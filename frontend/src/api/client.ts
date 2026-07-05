@@ -1,9 +1,11 @@
 import type {
   CongressTrade,
   DashboardRow,
+  IdeaRow,
   IngestionRun,
   InsiderTrade,
   PricePoint,
+  PriceStats,
   ScoreOut,
   TickerDetail,
   TickerSearchResult,
@@ -24,6 +26,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   scores: () => request<DashboardRow[]>("/api/scores"),
+  ideas: () => request<IdeaRow[]>("/api/ideas"),
+  stats: (ticker: string) => request<PriceStats>(`/api/tickers/${ticker}/stats`),
   scoreBreakdown: (ticker: string) => request<ScoreOut>(`/api/scores/${ticker}`),
   searchTickers: (q: string) =>
     request<TickerSearchResult[]>(`/api/tickers/search?q=${encodeURIComponent(q)}`),

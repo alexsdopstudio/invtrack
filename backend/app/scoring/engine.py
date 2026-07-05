@@ -9,11 +9,11 @@ component as "missing" so the score is always explainable.
 from datetime import date
 from typing import Any
 
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..config import get_scoring_config
-from ..models import Score, WatchlistItem
+from ..ingestion import targets
+from ..models import Score
 from . import congress, fundamentals, insider
 
 COMPONENTS = {
@@ -70,7 +70,9 @@ def compute_breakdown(
 
 def compute_and_store(db: Session, tickers: list[str] | None = None) -> list[Score]:
     if tickers is None:
-        tickers = list(db.scalars(select(WatchlistItem.ticker)))
+        # Watchlist + congressional-discovery candidates, so Radar ideas are
+        # scored on the same scale as tracked tickers.
+        tickers = targets.target_tickers(db)
     stored = []
     for ticker in tickers:
         total, breakdown = compute_breakdown(db, ticker)

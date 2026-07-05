@@ -14,8 +14,8 @@ import httpx
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..models import DimTicker, FactInsiderTrade, WatchlistItem
-from . import http
+from ..models import DimTicker, FactInsiderTrade
+from . import http, targets
 
 logger = logging.getLogger(__name__)
 
@@ -184,8 +184,10 @@ def upsert_insider_trades(db: Session, rows: list[dict[str, Any]]) -> int:
 
 def ingest(db: Session) -> int:
     since = date.today() - timedelta(days=LOOKBACK_DAYS)
+    # Watchlist + discovery candidates; a CIK from dim_ticker is required, so
+    # run the `tickers` ingest at least once first.
     tickers = db.scalars(
-        select(DimTicker).join(WatchlistItem, WatchlistItem.ticker == DimTicker.ticker)
+        select(DimTicker).where(DimTicker.ticker.in_(targets.target_tickers(db)))
     ).all()
     count = 0
     errors = []

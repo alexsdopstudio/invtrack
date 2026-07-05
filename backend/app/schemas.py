@@ -114,6 +114,33 @@ class TickerDetail(BaseModel):
     score: ScoreOut | None
 
 
+class IdeaRow(BaseModel):
+    ticker: str
+    name: str | None
+    sector: str | None
+    score: float | None
+    components: dict[str, Any] | None
+    buys: int
+    sells: int
+    buyers: int
+    last_activity: date | None
+    net_dollars: float
+    last_close: float | None
+    sparkline: list[float]
+
+
+class PriceStats(BaseModel):
+    ticker: str
+    cagr_1y: float
+    annual_vol: float
+    max_drawdown: float
+    atr_14: float | None
+    last_close: float
+    data_points: int
+    first_date: date
+    last_date: date
+
+
 class IngestionRunOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

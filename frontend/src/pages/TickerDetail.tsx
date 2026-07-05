@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import FundamentalsPanel from "../components/FundamentalsPanel";
 import PriceChart from "../components/PriceChart";
+import ReturnsCalculator from "../components/ReturnsCalculator";
 import ScoreBadge from "../components/ScoreBadge";
 import ScoreBreakdown from "../components/ScoreBreakdown";
 import { CongressTradesTable, InsiderTradesTable } from "../components/TradesTables";
@@ -36,6 +37,11 @@ export default function TickerDetailPage() {
     queryKey: ["prices", ticker],
     queryFn: () => api.prices(ticker),
   });
+  const { data: stats } = useQuery({
+    queryKey: ["stats", ticker],
+    queryFn: () => api.stats(ticker),
+    retry: false, // 404 just means not enough price history yet
+  });
 
   const toggleWatch = useMutation({
     mutationFn: () =>
@@ -57,7 +63,7 @@ export default function TickerDetailPage() {
         {detail.sector && (
           <span className="rounded border border-hairline px-1.5 py-0.5 text-xs text-ink-2">{detail.sector}</span>
         )}
-        <ScoreBadge score={detail.score?.total ?? null} size="lg" />
+        <ScoreBadge score={detail.score?.total ?? null} size="lg" showLabel />
         <button
           onClick={() => toggleWatch.mutate()}
           disabled={toggleWatch.isPending}
@@ -75,6 +81,10 @@ export default function TickerDetailPage() {
 
       <Section title="Why this score — component breakdown with provenance">
         {detail.score ? <ScoreBreakdown score={detail.score} /> : <p className="text-sm text-muted">No score yet.</p>}
+      </Section>
+
+      <Section title="Returns calculator — what could a given budget become?">
+        <ReturnsCalculator stats={stats ?? null} />
       </Section>
 
       <Section title="Price — daily close, last 12 months">

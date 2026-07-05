@@ -7,7 +7,8 @@ HOUSE_DATA_URL (the original bucket is also defunct; official House PTRs are
 PDFs and need a dedicated parser — roadmap).
 
 Disclosures are legally delayed up to 45 days, so this is a lagging signal.
-Only trades for tickers currently on the watchlist are stored.
+All trades are stored (not just watchlist tickers) — market-wide congressional
+activity powers the dashboard's Radar discovery section.
 """
 
 import logging
@@ -20,7 +21,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..config import get_settings
-from ..models import FactCongressTrade, WatchlistItem
+from ..models import FactCongressTrade
 from . import http, senate_efd
 
 logger = logging.getLogger(__name__)
@@ -71,7 +72,7 @@ def parse_stock_watcher_rows(
     parsed = []
     for row in rows:
         ticker = (row.get("ticker") or "").strip().upper()
-        if not ticker or ticker in {"--", "N/A", "NONE"}:
+        if not ticker or len(ticker) > 12 or ticker in {"--", "N/A", "NONE"}:
             continue
         tx_type = _normalize_tx_type(row.get("type"))
         tx_date = _parse_date(row.get("transaction_date"))
@@ -134,9 +135,6 @@ def fetch_house_rows(client: httpx.Client) -> list[dict[str, Any]]:
 
 
 def ingest(db: Session) -> int:
-    watchlist = set(db.scalars(select(WatchlistItem.ticker)))
-    if not watchlist:
-        return 0
     sources = (("senate", fetch_senate_rows), ("house", fetch_house_rows))
     count = 0
     errors = []
@@ -146,8 +144,7 @@ def ingest(db: Session) -> int:
         # must not block the other.
         for chamber, fetch in sources:
             try:
-                rows = fetch(client)
-                count += upsert_trades(db, [r for r in rows if r["ticker"] in watchlist])
+                count += upsert_trades(db, fetch(client))
                 any_success = True
             except Exception as exc:  # noqa: BLE001 - per-chamber isolation
                 logger.warning("congress ingest failed for %s: %s", chamber, exc)

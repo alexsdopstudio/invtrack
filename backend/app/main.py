@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
-from .routers import ingest, scores, tickers, watchlist
+from .routers import ideas, ingest, scores, tickers, watchlist
 
 DISCLAIMER = (
     "InvTrack is a personal research aid, not financial advice. It never issues "
@@ -22,6 +22,7 @@ app.add_middleware(
 )
 
 app.include_router(watchlist.router)
+app.include_router(ideas.router)
 app.include_router(tickers.router)
 app.include_router(scores.router)
 app.include_router(ingest.router)

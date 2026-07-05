@@ -93,6 +93,33 @@ export interface PricePoint {
   close: number | null;
 }
 
+export interface IdeaRow {
+  ticker: string;
+  name: string | null;
+  sector: string | null;
+  score: number | null;
+  components: Record<string, ScoreComponent> | null;
+  buys: number;
+  sells: number;
+  buyers: number;
+  last_activity: string | null;
+  net_dollars: number;
+  last_close: number | null;
+  sparkline: number[];
+}
+
+export interface PriceStats {
+  ticker: string;
+  cagr_1y: number;
+  annual_vol: number;
+  max_drawdown: number;
+  atr_14: number | null;
+  last_close: number;
+  data_points: number;
+  first_date: string;
+  last_date: string;
+}
+
 export interface IngestionRun {
   id: number;
   source: string;

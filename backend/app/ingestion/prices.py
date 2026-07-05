@@ -8,7 +8,8 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..models import FactPrice, WatchlistItem
+from ..models import FactPrice
+from . import targets
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +50,7 @@ def _history_rows(history) -> list[dict[str, Any]]:
 def ingest(db: Session) -> int:
     import yfinance as yf
 
-    tickers = list(db.scalars(select(WatchlistItem.ticker)))
+    tickers = targets.target_tickers(db)
     count = 0
     errors = []
     for ticker in tickers:

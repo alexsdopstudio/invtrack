@@ -9,7 +9,8 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..models import DimTicker, FactFundamentals, WatchlistItem, utcnow
+from ..models import DimTicker, FactFundamentals, utcnow
+from . import targets
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +63,9 @@ def upsert_snapshot(db: Session, ticker: str, snapshot: dict[str, Any], as_of: d
 def ingest(db: Session) -> int:
     import yfinance as yf
 
-    tickers = list(db.scalars(select(WatchlistItem.ticker)))
+    # Watchlist plus the top congressional-discovery candidates, so Radar
+    # tickers get comparable scores.
+    tickers = targets.target_tickers(db)
     count = 0
     errors = []
     for ticker in tickers:

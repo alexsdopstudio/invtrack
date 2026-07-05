@@ -13,12 +13,13 @@ from ..models import (
     FactPrice,
     WatchlistItem,
 )
-from ..queries import latest_score_for
+from ..queries import latest_score_for, price_stats
 from ..schemas import (
     CongressTradeOut,
     FundamentalsOut,
     InsiderTradeOut,
     PricePoint,
+    PriceStats,
     ScoreOut,
     TickerDetail,
     TickerSearchResult,
@@ -104,6 +105,17 @@ def insider_trades(ticker: str, limit: int = 100, db: Session = Depends(get_db))
         .order_by(FactInsiderTrade.transaction_date.desc())
         .limit(limit)
     ).all()
+
+
+@router.get("/{ticker}/stats", response_model=PriceStats)
+def stats(ticker: str, db: Session = Depends(get_db)):
+    dim = _get_ticker(db, ticker)
+    result = price_stats(db, dim.ticker)
+    if result is None:
+        raise HTTPException(
+            404, f"not enough price history for {dim.ticker} — ingest prices first"
+        )
+    return result
 
 
 @router.get("/{ticker}/prices", response_model=list[PricePoint])

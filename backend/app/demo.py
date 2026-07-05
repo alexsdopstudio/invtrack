@@ -23,6 +23,12 @@ DEMO_TICKERS = {
     "UNH": ("UnitedHealth Group Incorporated", "0000731766", "Healthcare"),
 }
 
+# Not on the watchlist: they surface in the Radar (discovery) section.
+DISCOVERY_TICKERS = {
+    "PLTR": ("Palantir Technologies Inc.", "0001321655", "Technology"),
+    "AVGO": ("Broadcom Inc.", "0001730168", "Technology"),
+}
+
 
 def _d(days_ago: int) -> str:
     return (date.today() - timedelta(days=days_ago)).strftime("%m/%d/%Y")
@@ -57,14 +63,15 @@ def _house_row(rep, ticker, tx_type, amount, tx_days_ago, disclosure_days_ago):
 def seed_demo(db: Session) -> dict[str, int]:
     counts: dict[str, int] = {}
 
+    all_dims = {**DEMO_TICKERS, **DISCOVERY_TICKERS}
     counts["tickers"] = upsert_tickers(
         db,
         [
             {"ticker": t, "name": name, "cik": cik}
-            for t, (name, cik, _sector) in DEMO_TICKERS.items()
+            for t, (name, cik, _sector) in all_dims.items()
         ],
     )
-    for ticker, (_name, _cik, sector) in DEMO_TICKERS.items():
+    for ticker, (_name, _cik, sector) in all_dims.items():
         from .models import DimTicker
 
         dim = db.get(DimTicker, ticker)
@@ -82,6 +89,11 @@ def seed_demo(db: Session) -> dict[str, int]:
         _senate_row("Sen. Gamma Example", "NVDA", "Purchase", "$100,001 - $250,000", 30, 6),
         _senate_row("Sen. Alpha Example", "AAPL", "Purchase", "$15,001 - $50,000", 55, 20),
         _senate_row("Sen. Delta Example", "UNH", "Sale (Full)", "$250,001 - $500,000", 45, 14),
+        # Radar (discovery) material: not on the demo watchlist
+        _senate_row("Sen. Alpha Example", "PLTR", "Purchase", "$100,001 - $250,000", 22, 8),
+        _senate_row("Sen. Beta Example", "PLTR", "Purchase", "$50,001 - $100,000", 18, 6),
+        _senate_row("Sen. Gamma Example", "PLTR", "Purchase", "$15,001 - $50,000", 14, 3),
+        _senate_row("Sen. Delta Example", "AVGO", "Purchase", "$50,001 - $100,000", 26, 11),
     ]
     house = [
         _house_row("Rep. Epsilon Example", "NVDA", "purchase", "$1,001 - $15,000", 25, 5),
@@ -134,6 +146,10 @@ def seed_demo(db: Session) -> dict[str, int]:
                  "debt_to_equity": 0.22, "pe": 45.0, "forward_pe": 33.0, "market_cap": 3.0e12},
         "UNH": {"revenue_growth_yoy": 0.07, "gross_margin": 0.24, "operating_margin": 0.08,
                  "debt_to_equity": 0.85, "pe": 12.0, "forward_pe": 11.0, "market_cap": 4.5e11},
+        # discovery ticker with full data (AVGO stays congress-only on purpose,
+        # to exercise the missing-component path in the Radar)
+        "PLTR": {"revenue_growth_yoy": 0.30, "gross_margin": 0.80, "operating_margin": 0.16,
+                 "debt_to_equity": 0.10, "pe": 60.0, "forward_pe": 48.0, "market_cap": 1.5e11},
     }
     counts["fundamentals"] = sum(
         upsert_snapshot(db, t, {**snap, "raw": {"demo": True}}, date.today())
@@ -141,8 +157,8 @@ def seed_demo(db: Session) -> dict[str, int]:
     )
 
     rng = random.Random(42)
-    start_prices = {"AAPL": 195.0, "MSFT": 410.0, "NVDA": 105.0, "UNH": 520.0}
-    drift = {"AAPL": 0.0004, "MSFT": 0.0006, "NVDA": 0.0018, "UNH": -0.0012}
+    start_prices = {"AAPL": 195.0, "MSFT": 410.0, "NVDA": 105.0, "UNH": 520.0, "PLTR": 24.0}
+    drift = {"AAPL": 0.0004, "MSFT": 0.0006, "NVDA": 0.0018, "UNH": -0.0012, "PLTR": 0.0022}
     counts["prices"] = 0
     for ticker, price in start_prices.items():
         rows = []
