@@ -120,6 +120,38 @@ export interface PriceStats {
   last_date: string;
 }
 
+export interface ScreenerCriterion {
+  value: number | null;
+  threshold: Record<string, number>;
+  status: "pass" | "fail" | "unknown";
+}
+
+export interface ScreenerRow {
+  ticker: string;
+  name: string | null;
+  sector: string | null;
+  criteria: Record<string, ScreenerCriterion>;
+  passed: number;
+  failed: number;
+  unknown: number;
+  data_as_of: string | null;
+}
+
+export interface AiReport {
+  ticker: string;
+  accession_no: string;
+  model: string;
+  created_at: string;
+  report_md: string;
+  sections_meta: Record<string, unknown> | null;
+}
+
+export interface Health {
+  status: string;
+  disclaimer: string;
+  ai_analysis_enabled: boolean;
+}
+
 export interface IngestionRun {
   id: number;
   source: string;

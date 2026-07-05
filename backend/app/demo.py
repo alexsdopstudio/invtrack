@@ -139,17 +139,28 @@ def seed_demo(db: Session) -> dict[str, int]:
 
     fundamentals = {
         "AAPL": {"revenue_growth_yoy": 0.06, "gross_margin": 0.46, "operating_margin": 0.31,
-                 "debt_to_equity": 1.45, "pe": 32.0, "forward_pe": 28.0, "market_cap": 3.2e12},
+                 "debt_to_equity": 1.45, "pe": 32.0, "forward_pe": 28.0, "market_cap": 3.2e12,
+                 "current_ratio": 0.95, "total_cash": 6.5e10,
+                 "quarterly_operating_cashflow": 2.9e10, "insider_ownership_pct": 0.001},
         "MSFT": {"revenue_growth_yoy": 0.15, "gross_margin": 0.69, "operating_margin": 0.44,
-                 "debt_to_equity": 0.35, "pe": 34.0, "forward_pe": 30.0, "market_cap": 3.1e12},
+                 "debt_to_equity": 0.35, "pe": 34.0, "forward_pe": 30.0, "market_cap": 3.1e12,
+                 "current_ratio": 1.3, "total_cash": 8.0e10,
+                 "quarterly_operating_cashflow": 3.4e10, "insider_ownership_pct": 0.0005},
         "NVDA": {"revenue_growth_yoy": 0.62, "gross_margin": 0.75, "operating_margin": 0.58,
-                 "debt_to_equity": 0.22, "pe": 45.0, "forward_pe": 33.0, "market_cap": 3.0e12},
+                 "debt_to_equity": 0.22, "pe": 45.0, "forward_pe": 33.0, "market_cap": 3.0e12,
+                 "current_ratio": 4.1, "total_cash": 3.8e10,
+                 "quarterly_operating_cashflow": 1.5e10, "insider_ownership_pct": 0.04},
         "UNH": {"revenue_growth_yoy": 0.07, "gross_margin": 0.24, "operating_margin": 0.08,
-                 "debt_to_equity": 0.85, "pe": 12.0, "forward_pe": 11.0, "market_cap": 4.5e11},
-        # discovery ticker with full data (AVGO stays congress-only on purpose,
-        # to exercise the missing-component path in the Radar)
+                 "debt_to_equity": 0.85, "pe": 12.0, "forward_pe": 11.0, "market_cap": 4.5e11,
+                 "current_ratio": 0.9, "total_cash": 2.5e10,
+                 "quarterly_operating_cashflow": 8.0e9},  # insider ownership: unknown
+        # discovery ticker sized to pass most screener criteria (demo of the
+        # aggressive-growth profile: small, fast-growing, high-margin, solvent)
         "PLTR": {"revenue_growth_yoy": 0.30, "gross_margin": 0.80, "operating_margin": 0.16,
-                 "debt_to_equity": 0.10, "pe": 60.0, "forward_pe": 48.0, "market_cap": 1.5e11},
+                 "debt_to_equity": 0.10, "pe": 60.0, "forward_pe": 48.0, "market_cap": 1.5e9,
+                 "current_ratio": 5.9, "total_cash": 3.0e9,
+                 "quarterly_operating_cashflow": -5.0e7, "insider_ownership_pct": 0.13},
+        # AVGO stays congress-only on purpose (missing-data paths in Radar + screener)
     }
     counts["fundamentals"] = sum(
         upsert_snapshot(db, t, {**snap, "raw": {"demo": True}}, date.today())

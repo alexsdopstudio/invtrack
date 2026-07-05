@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
+import AnalyzeFiling from "../components/AnalyzeFiling";
 import FundamentalsPanel from "../components/FundamentalsPanel";
 import PriceChart from "../components/PriceChart";
 import ReturnsCalculator from "../components/ReturnsCalculator";
@@ -93,6 +94,10 @@ export default function TickerDetailPage() {
 
       <Section title="Fundamentals">
         <FundamentalsPanel f={detail.fundamentals} />
+      </Section>
+
+      <Section title="AI filing analysis — forensic read of the latest 10-K (optional)">
+        <AnalyzeFiling ticker={detail.ticker} />
       </Section>
 
       <Section title="Congressional trades (STOCK Act disclosures — lagged up to 45 days)">

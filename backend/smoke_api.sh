@@ -84,6 +84,14 @@ check "price stats" 200 GET /api/tickers/NVDA/stats
 jqcheck "stats fields plausible" "d['data_points'] > 200 and 0 < d['annual_vol'] < 2 and d['max_drawdown'] <= 0"
 check "stats without history -> 404" 404 GET /api/tickers/AVGO/stats
 
+echo "--- screener & analysis ---"
+check "screener" 200 GET /api/screener
+jqcheck "screener ranked, PLTR passes all 7" "d[0]['ticker'] == 'PLTR' and d[0]['passed'] == 7"
+jqcheck "unknown-only ticker present, never silent" "any(r['ticker'] == 'AVGO' and r['unknown'] == 7 for r in d)"
+check "analysis disabled without key" 400 POST /api/analysis/NVDA
+jqcheck "analysis error is actionable" "'ANTHROPIC_API_KEY' in d['detail']"
+check "no report yet -> 404" 404 GET /api/analysis/NVDA
+
 echo "--- ingest ---"
 check "unknown source" 404 POST /api/ingest/nonsense
 check "ingest congress (network blocked here)" 200 POST /api/ingest/congress

@@ -1,12 +1,15 @@
 import type {
+  AiReport,
   CongressTrade,
   DashboardRow,
+  Health,
   IdeaRow,
   IngestionRun,
   InsiderTrade,
   PricePoint,
   PriceStats,
   ScoreOut,
+  ScreenerRow,
   TickerDetail,
   TickerSearchResult,
 } from "./types";
@@ -25,8 +28,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  health: () => request<Health>("/api/health"),
   scores: () => request<DashboardRow[]>("/api/scores"),
   ideas: () => request<IdeaRow[]>("/api/ideas"),
+  screener: () => request<ScreenerRow[]>("/api/screener"),
+  aiReport: (ticker: string) => request<AiReport>(`/api/analysis/${ticker}`),
+  analyze: (ticker: string) => request<AiReport>(`/api/analysis/${ticker}`, { method: "POST" }),
   stats: (ticker: string) => request<PriceStats>(`/api/tickers/${ticker}/stats`),
   scoreBreakdown: (ticker: string) => request<ScoreOut>(`/api/scores/${ticker}`),
   searchTickers: (q: string) =>

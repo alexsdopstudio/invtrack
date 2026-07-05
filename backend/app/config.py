@@ -34,6 +34,12 @@ class Settings(BaseSettings):
 
     scoring_config_path: Path = BACKEND_DIR / "scoring.yaml"
 
+    # Opt-in AI analysis of 10-K filings. Leave empty to disable the feature
+    # entirely (the rest of the app stays 100% free/keyless). Costs money per
+    # analysis — see README.
+    anthropic_api_key: str = ""
+    analysis_model: str = "claude-opus-4-8"
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

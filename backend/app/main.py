@@ -1,8 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .analysis.report import analysis_enabled
 from .config import get_settings
-from .routers import ideas, ingest, scores, tickers, watchlist
+from .routers import analysis, ideas, ingest, scores, screener, tickers, watchlist
 
 DISCLAIMER = (
     "InvTrack is a personal research aid, not financial advice. It never issues "
@@ -23,6 +24,8 @@ app.add_middleware(
 
 app.include_router(watchlist.router)
 app.include_router(ideas.router)
+app.include_router(screener.router)
+app.include_router(analysis.router)
 app.include_router(tickers.router)
 app.include_router(scores.router)
 app.include_router(ingest.router)
@@ -30,4 +33,8 @@ app.include_router(ingest.router)
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "disclaimer": DISCLAIMER}
+    return {
+        "status": "ok",
+        "disclaimer": DISCLAIMER,
+        "ai_analysis_enabled": analysis_enabled(),
+    }

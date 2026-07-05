@@ -125,9 +125,27 @@ class FactFundamentals(Base):
     pe: Mapped[float | None] = mapped_column(Float)
     forward_pe: Mapped[float | None] = mapped_column(Float)
     market_cap: Mapped[float | None] = mapped_column(Float)
+    # Screener inputs
+    current_ratio: Mapped[float | None] = mapped_column(Float)
+    total_cash: Mapped[float | None] = mapped_column(Float)
+    quarterly_operating_cashflow: Mapped[float | None] = mapped_column(Float)
+    insider_ownership_pct: Mapped[float | None] = mapped_column(Float)
     raw: Mapped[dict[str, Any] | None] = mapped_column(JsonCol)
     source: Mapped[str] = mapped_column(String(32), default="yfinance")
     ingested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class AiReport(Base):
+    __tablename__ = "ai_report"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ticker: Mapped[str] = mapped_column(String(12), index=True)
+    accession_no: Mapped[str] = mapped_column(String(32))
+    model: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    report_md: Mapped[str] = mapped_column(Text)
+    # provenance: which 10-K sections were analyzed and how much of each
+    sections_meta: Mapped[dict[str, Any] | None] = mapped_column(JsonCol)
 
 
 class Score(Base):

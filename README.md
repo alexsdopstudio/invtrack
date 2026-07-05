@@ -126,6 +126,31 @@ silently dragged down by an empty source. Every score row stores the full
 per-component breakdown (value, weight, contribution, inputs, source, data
 timestamps) so the UI can always answer "why is this score what it is?".
 
+## Screener
+
+The **Screener** page runs every tracked + Radar ticker through an
+aggressive-growth quantitative filter (thresholds in
+[`backend/scoring.yaml`](backend/scoring.yaml) under `screener:`): market cap
+$50M–$2B, avg daily volume ≥150k, revenue growth ≥25%, gross margin ≥60%,
+current ratio ≥1.5, cash runway ≥4 quarters, insider ownership ≥10%. All
+inputs come from free sources (yfinance + ingested prices); a criterion with
+no data reports **unknown**, never a silent verdict. Congress-sourced
+candidates are mostly mega-caps and will fail the size criterion — that's the
+filter working as intended.
+
+## AI filing analysis (optional, paid)
+
+With `ANTHROPIC_API_KEY` set in `.env`, every ticker page (and the screener)
+gets an **"Analyze latest 10-K"** button: InvTrack pulls Items 1 / 1A / 7 of
+the company's latest 10-K from SEC EDGAR (free, official) and has Claude write
+a forensic-accountant-style review — customer concentration, litigation,
+going-concern language, moat quality, management tone — with a "what to verify
+next" list. The model never computes financial numbers (those come from the
+structured pipeline) and every report carries its model, filing accession and
+date. Reports are cached per filing, so cost is ~$0.25–0.50 per *new* 10-K
+analyzed (Opus 4.8; configurable via `ANALYSIS_MODEL`). Leave the key unset
+and the feature is fully disabled — everything else stays free.
+
 ## Tests
 
 ```bash

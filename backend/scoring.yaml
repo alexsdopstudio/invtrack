@@ -32,6 +32,18 @@ insider:
   cluster_window_days: 30
   cluster_bonus: 10
 
+# Aggressive-growth screener criteria (Screener page). A criterion with no
+# data reports "unknown" — never a silent pass or fail. Thresholds follow the
+# micro/small-cap growth playbook; tune freely.
+screener:
+  market_cap: { min: 50000000, max: 2000000000 }  # $50M–$2B: where inefficiencies live
+  avg_daily_volume: { min: 150000 }               # shares/day (90d avg) — exit without slippage
+  revenue_growth_yoy: { min: 0.25 }               # >25%: product-market fit
+  gross_margin: { min: 0.60 }                     # >60%: operating leverage as it scales
+  current_ratio: { min: 1.5 }                     # covers 12 months of short-term obligations
+  cash_runway_quarters: { min: 4 }                # survives 12+ months without dilutive financing
+  insider_ownership: { min: 0.10 }                # >10%: management skin in the game
+
 fundamentals:
   # Each metric maps to a band sub-score (excellent=90, good=70, weak=40,
   # below weak=20); available metrics are averaged. Missing metrics are

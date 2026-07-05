@@ -23,13 +23,18 @@ _RAW_KEYS = [
     "trailingPE",
     "forwardPE",
     "marketCap",
+    "currentRatio",
+    "totalCash",
+    "heldPercentInsiders",
     "sector",
     "exchange",
     "shortName",
 ]
 
 
-def snapshot_from_info(info: dict[str, Any]) -> dict[str, Any]:
+def snapshot_from_info(
+    info: dict[str, Any], quarterly_ocf: float | None = None
+) -> dict[str, Any]:
     d2e = info.get("debtToEquity")
     return {
         "revenue_growth_yoy": info.get("revenueGrowth"),
@@ -39,8 +44,29 @@ def snapshot_from_info(info: dict[str, Any]) -> dict[str, Any]:
         "pe": info.get("trailingPE"),
         "forward_pe": info.get("forwardPE"),
         "market_cap": info.get("marketCap"),
+        "current_ratio": info.get("currentRatio"),
+        "total_cash": info.get("totalCash"),
+        "quarterly_operating_cashflow": quarterly_ocf,
+        "insider_ownership_pct": info.get("heldPercentInsiders"),
         "raw": {k: info.get(k) for k in _RAW_KEYS if k in info},
     }
+
+
+def latest_quarterly_ocf(quarterly_cashflow) -> float | None:
+    """Most recent quarter's Operating Cash Flow from a yfinance
+    quarterly_cashflow DataFrame (rows = line items, columns = quarters,
+    newest first). Negative = cash burn."""
+    try:
+        if quarterly_cashflow is None or quarterly_cashflow.empty:
+            return None
+        for label in ("Operating Cash Flow", "Total Cash From Operating Activities"):
+            if label in quarterly_cashflow.index:
+                series = quarterly_cashflow.loc[label].dropna()
+                if len(series) > 0:
+                    return float(series.iloc[0])
+    except Exception:  # noqa: BLE001 - unofficial source, shapes drift
+        return None
+    return None
 
 
 def upsert_snapshot(db: Session, ticker: str, snapshot: dict[str, Any], as_of: date) -> int:
@@ -70,8 +96,9 @@ def ingest(db: Session) -> int:
     errors = []
     for ticker in tickers:
         try:
-            info = yf.Ticker(ticker).info or {}
-            snapshot = snapshot_from_info(info)
+            yft = yf.Ticker(ticker)
+            info = yft.info or {}
+            snapshot = snapshot_from_info(info, latest_quarterly_ocf(yft.quarterly_cashflow))
             count += upsert_snapshot(db, ticker, snapshot, date.today())
             sector = info.get("sector")
             if sector:

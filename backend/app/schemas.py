@@ -141,6 +141,34 @@ class PriceStats(BaseModel):
     last_date: date
 
 
+class ScreenerCriterion(BaseModel):
+    value: float | None
+    threshold: dict[str, float]
+    status: str  # pass | fail | unknown
+
+
+class ScreenerRow(BaseModel):
+    ticker: str
+    name: str | None
+    sector: str | None
+    criteria: dict[str, ScreenerCriterion]
+    passed: int
+    failed: int
+    unknown: int
+    data_as_of: date | None
+
+
+class AiReportOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
+
+    ticker: str
+    accession_no: str
+    model: str
+    created_at: datetime
+    report_md: str
+    sections_meta: dict[str, Any] | None
+
+
 class IngestionRunOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
