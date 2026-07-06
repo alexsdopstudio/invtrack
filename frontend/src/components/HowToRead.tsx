@@ -11,11 +11,11 @@ const EXPLANATIONS: Record<string, { weight: string; text: string }> = {
   },
   insider: {
     weight: "20%",
-    text: "Are the company's own executives and directors buying with their own money? From SEC Form 4 filings.",
+    text: "Are the company's own executives and directors buying with their own money? From SEC Form 4 filings — officer buys count extra, pre-scheduled (10b5-1) sales don't count at all.",
   },
   momentum: {
     weight: "15%",
-    text: "Is the price above its own 50/200-day averages? Trend confirmation, not prediction.",
+    text: "Is the price above its own 50/200-day averages, and is it beating the market (vs SPY)? Trend confirmation, not prediction.",
   },
 };
 

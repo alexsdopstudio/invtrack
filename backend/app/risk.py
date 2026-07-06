@@ -101,6 +101,20 @@ def risk_flags(db: Session, ticker: str, today: date | None = None) -> list[dict
         .order_by(FactFundamentals.as_of.desc())
         .limit(1)
     )
+    # Earnings within two weeks: a scheduled binary event that can invalidate
+    # any research done today.
+    if (
+        snapshot is not None
+        and snapshot.next_earnings_date is not None
+        and today <= snapshot.next_earnings_date <= today + timedelta(days=14)
+    ):
+        flags.append(_flag(
+            "earnings_soon", "warning",
+            "Earnings soon",
+            f"Next earnings report is scheduled for {snapshot.next_earnings_date} — "
+            "expect a sharp move either way; research done today may be stale next week.",
+        ))
+
     if snapshot is not None:
         runway = cash_runway_quarters(
             float(snapshot.total_cash) if snapshot.total_cash is not None else None,

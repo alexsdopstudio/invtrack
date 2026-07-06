@@ -30,6 +30,12 @@ momentum:
   long_weight: 0.4
   distance_scale: 0.10
   min_closes: 60   # fewer data points -> component reports missing
+  # Relative strength: did the stock beat the benchmark over the window?
+  # Up 5% while the market is up 20% is lagging, not leading. Falls back to
+  # MA-only when benchmark history is missing.
+  rs_weight: 0.4
+  rs_window_days: 90
+  rs_scale: 0.15
 
 congress:
   # Congressional disclosures are legally delayed up to 45 days (STOCK Act),
@@ -59,9 +65,16 @@ insider:
   lookback_days: 90
   decay_half_life_days: 30
   dollar_scale: 1000000
-  # Insider selling is noisy (diversification, taxes, 10b5-1 plans), so sell
-  # dollars are discounted relative to open-market buys.
+  # Insider selling is noisy (diversification, taxes), so sell dollars are
+  # discounted relative to open-market buys...
   sell_discount: 0.5
+  # ...and sales flagged as pre-scheduled Rule 10b5-1 plan trades carry no
+  # timing signal at all (0.0 = fully excluded from the score).
+  plan_sale_discount: 0.0
+  # A CFO buying with their own money says more than a board member's token
+  # purchase: buy dollars are scaled by the filer's role.
+  officer_weight: 1.5
+  director_weight: 1.0
   cluster_min_insiders: 2
   cluster_window_days: 30
   cluster_bonus: 10
@@ -87,3 +100,11 @@ fundamentals:
   # For these two, lower is better.
   debt_to_equity: { excellent: 0.5, good: 1.0, weak: 2.0 }
   pe: { excellent: 15, good: 25, weak: 40 }
+  # Trend adjustment: when an older snapshot (>= min_days_apart days back)
+  # exists, a metric that moved by >= min_delta gets a band-score bonus
+  # (improving) or penalty (deteriorating) — level and direction both matter.
+  trend:
+    metrics: [revenue_growth_yoy, operating_margin]
+    min_days_apart: 60
+    min_delta: 0.02
+    bonus: 10

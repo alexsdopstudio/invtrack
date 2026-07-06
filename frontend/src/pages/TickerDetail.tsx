@@ -45,6 +45,11 @@ export default function TickerDetailPage() {
     queryFn: () => api.stats(ticker),
     retry: false, // 404 just means not enough price history yet
   });
+  const { data: benchStats } = useQuery({
+    queryKey: ["stats", "SPY"],
+    queryFn: () => api.stats("SPY"),
+    retry: false, // benchmark prices may not be ingested yet
+  });
 
   const toggleWatch = useMutation({
     mutationFn: () =>
@@ -95,7 +100,7 @@ export default function TickerDetailPage() {
       </Section>
 
       <Section title="Returns calculator — what could a given budget become?">
-        <ReturnsCalculator stats={stats ?? null} />
+        <ReturnsCalculator stats={stats ?? null} bench={benchStats ?? null} />
       </Section>
 
       <Section title="Price — daily close, last 12 months">

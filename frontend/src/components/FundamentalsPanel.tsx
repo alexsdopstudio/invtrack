@@ -23,6 +23,7 @@ export default function FundamentalsPanel({ f }: { f: Fundamentals | null }) {
     ["P/E (trailing)", fmtNum(f.pe)],
     ["P/E (forward)", fmtNum(f.forward_pe)],
     ["Market cap", fmtCap(f.market_cap)],
+    ["Next earnings", f.next_earnings_date ?? "—"],
   ];
   return (
     <div>

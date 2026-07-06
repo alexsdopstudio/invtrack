@@ -9,7 +9,13 @@ function money(v: number): string {
 // extrapolated from the stock's own ingested price history (lognormal
 // compounding of last-year CAGR ± volatility). Explicitly NOT a forecast:
 // the point is to make the range of outcomes and the downside tangible.
-export default function ReturnsCalculator({ stats }: { stats: PriceStats | null }) {
+export default function ReturnsCalculator({
+  stats,
+  bench,
+}: {
+  stats: PriceStats | null;
+  bench?: PriceStats | null;
+}) {
   const [budget, setBudget] = useState(1000);
   const [years, setYears] = useState(3);
 
@@ -80,6 +86,32 @@ export default function ReturnsCalculator({ stats }: { stats: PriceStats | null 
         ))}
       </div>
 
+      {bench && (
+        <div className="rounded-md border border-hairline p-3 text-sm text-ink-2">
+          <span className="font-medium text-ink">Market check:</span> the same{" "}
+          <span className="tnum">{money(budget)}</span> in the whole market ({bench.ticker}, past
+          year’s {(bench.cagr_1y * 100).toFixed(1)}%/yr repeated) would be{" "}
+          <span className="tnum font-medium text-ink">
+            {money(budget * Math.exp(Math.log(1 + bench.cagr_1y) * years))}
+          </span>
+          {stats.cagr_1y < bench.cagr_1y ? (
+            <>
+              {" "}
+              — over the past year this stock <span className="font-medium text-ink">lagged the
+              market</span>, with more volatility. Any single-stock bet needs a reason to beat that
+              boring alternative.
+            </>
+          ) : (
+            <>
+              {" "}
+              — this stock beat it over the past year, but with{" "}
+              {(stats.annual_vol / Math.max(bench.annual_vol, 0.01)).toFixed(1)}× the volatility.
+              Past outperformance is the least reliable thing markets offer.
+            </>
+          )}
+        </div>
+      )}
+
       <div className="rounded-md border border-hairline p-3 text-sm text-ink-2">
         <span className="font-medium text-ink">Stomach check:</span> at the worst point of the last
         12 months this stock was down {(stats.max_drawdown * 100).toFixed(0)}% from its peak — your{" "}
@@ -91,8 +123,9 @@ export default function ReturnsCalculator({ stats }: { stats: PriceStats | null 
       <p className="text-xs text-muted">
         Based purely on this stock’s last {stats.data_points} trading days (through {stats.last_date}
         ): {(stats.cagr_1y * 100).toFixed(1)}%/yr trend, {(stats.annual_vol * 100).toFixed(0)}%
-        annualized volatility. The past does not predict the future — this is a way to feel the
-        range of outcomes, not a forecast, and not financial advice.
+        annualized volatility. This is an <span className="font-medium">illustration of historical
+        volatility, not a forecast</span> — extrapolating past returns is exactly the mistake this
+        panel exists to make visible. Not financial advice.
       </p>
     </div>
   );

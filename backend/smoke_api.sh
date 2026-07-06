@@ -96,11 +96,19 @@ check "no report yet -> 404" 404 GET /api/analysis/NVDA
 
 echo "--- alerts, history & risks ---"
 check "alerts feed" 200 GET /api/alerts
-jqcheck "demo alerts present with kinds" "len(d) >= 3 and all(r['kind'] in ('congress_trade','insider_trade','score_cross') for r in d)"
+jqcheck "demo alerts present with kinds" "len(d) >= 3 and all(r['kind'] in ('congress_trade','insider_trade','score_cross','risk_flag') for r in d)"
+jqcheck "serious risk flags alert too" "any(r['kind'] == 'risk_flag' for r in d)"
 check "score history" 200 GET /api/tickers/NVDA/score-history
 jqcheck "history has daily entries with deltas" "len(d) >= 5 and d[-1]['total_delta'] is not None and 'congress' in d[-1]['contributions']"
 check "risk flags" 200 GET /api/tickers/UNH/risks
 jqcheck "UNH shows insider selling cluster" "any(f['id'] == 'insider_selling_cluster' for f in d)"
+check "earnings-soon flag" 200 GET /api/tickers/NVDA/risks
+jqcheck "NVDA earnings inside 14d window flagged" "any(f['id'] == 'earnings_soon' for f in d)"
+check "signal-quality inputs in breakdown" 200 GET /api/scores/UNH
+jqcheck "10b5-1 plan sale muted in insider score" "d['components']['insider']['inputs']['plan_sales_muted'] == 1"
+jqcheck "fundamentals trend recorded" "d['components']['fundamentals']['inputs']['metrics']['operating_margin']['trend']['adjustment'] < 0"
+check "momentum RS in breakdown" 200 GET /api/scores/NVDA
+jqcheck "momentum carries excess vs benchmark" "d['components']['momentum']['inputs']['excess_vs_benchmark_pct'] is not None"
 check "mark alerts seen" 200 POST /api/alerts/seen
 jqcheck "marked count returned" "d['marked'] >= 0"
 jqcheck_health() { curl -s "$B/api/health" > /tmp/last_body; }

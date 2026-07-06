@@ -33,15 +33,29 @@ def compute(db: Session, ticker: str, config: dict[str, Any], today: date) -> di
         return None
 
     half_life = cfg["decay_half_life_days"]
+    officer_weight = cfg.get("officer_weight", 1.0)
+    director_weight = cfg.get("director_weight", 1.0)
+    plan_sale_discount = cfg.get("plan_sale_discount", 0.0)
     net = 0.0
     buy_dollars = sell_dollars = 0.0
+    plan_sales_muted = 0
     for t in trades:
         decay = 0.5 ** ((today - t.transaction_date).days / half_life)
         if t.code == "P":
-            net += t.value * decay
+            # A CFO buying with their own money is a stronger signal than a
+            # board member's token purchase.
+            role_weight = (
+                officer_weight if t.is_officer
+                else director_weight if t.is_director
+                else 1.0
+            )
+            net += t.value * decay * role_weight
             buy_dollars += t.value
         else:
-            net -= cfg["sell_discount"] * t.value * decay
+            # Pre-scheduled (10b5-1 plan) sales carry no timing signal.
+            discount = plan_sale_discount if t.is_10b5_1 else cfg["sell_discount"]
+            plan_sales_muted += bool(t.is_10b5_1)
+            net -= discount * t.value * decay
             sell_dollars += t.value
 
     score = 50.0 + 50.0 * math.tanh(net / cfg["dollar_scale"])
@@ -67,6 +81,8 @@ def compute(db: Session, ticker: str, config: dict[str, Any], today: date) -> di
             "buy_dollars": round(buy_dollars, 2),
             "sell_dollars": round(sell_dollars, 2),
             "sell_discount": cfg["sell_discount"],
+            "officer_weight": officer_weight,
+            "plan_sales_muted": plan_sales_muted,
             "net_decayed_dollars": round(net, 2),
             "lookback_days": cfg["lookback_days"],
             "cluster": cluster,

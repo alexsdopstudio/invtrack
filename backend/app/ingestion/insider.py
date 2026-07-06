@@ -123,6 +123,13 @@ def parse_form4_xml(xml_text: str, accession_no: str) -> list[dict[str, Any]]:
     root = ET.fromstring(xml_text)
     ticker = _text(root.find("./issuer/issuerTradingSymbol"))
     issuer_cik = _text(root.find("./issuer/issuerCik"))
+    # "Transaction made pursuant to a Rule 10b5-1(c) plan" checkbox (2023+
+    # forms): pre-scheduled trades carry no timing signal, so scoring can
+    # exclude them. Missing element = older form = None (unknown).
+    aff_10b51_el = root.find("./aff10b5One")
+    is_10b5_1 = (
+        _text(aff_10b51_el) in ("1", "true") if aff_10b51_el is not None else None
+    )
     owner = root.find("./reportingOwner")
     name = _text(owner.find("./reportingOwnerId/rptOwnerName")) if owner is not None else None
     rel = owner.find("./reportingOwnerRelationship") if owner is not None else None
@@ -150,11 +157,13 @@ def parse_form4_xml(xml_text: str, accession_no: str) -> list[dict[str, Any]]:
                 "is_director": is_director,
                 "transaction_date": datetime.strptime(tx_date_text, "%Y-%m-%d").date(),
                 "code": code,
+                "is_10b5_1": is_10b5_1,
                 "shares": shares,
                 "price": price,
                 "value": (shares * price) if shares is not None and price is not None else None,
                 "raw": {
                     "accession_no": accession_no,
+                    "aff_10b5_one": is_10b5_1,
                     "acquired_disposed": _text(
                         tx.find("./transactionAmounts/transactionAcquiredDisposedCode")
                     ),

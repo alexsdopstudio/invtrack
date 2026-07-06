@@ -131,6 +131,23 @@ def detect_alerts(db: Session, today: date | None = None) -> list[Alert]:
             payload={"from": previous.total, "to": latest.total, "direction": direction},
         )
 
+    # New serious risk flags (computed on read; one alert per flag emergence)
+    from .risk import risk_flags  # local import to avoid a module cycle
+
+    for ticker in watchlist:
+        for flag in risk_flags(db, ticker, today):
+            if flag["severity"] != "serious":
+                continue
+            _add(
+                db, existing, created,
+                ticker=ticker,
+                kind="risk_flag",
+                title=f"{ticker}: {flag['label']}",
+                body=f"{flag['detail']} Open the ticker's risk flags for context.",
+                dedupe_key=f"risk:{ticker}:{flag['id']}",
+                payload={"flag": flag["id"], "severity": flag["severity"]},
+            )
+
     db.commit()
     if created:
         _push_webhook(created)

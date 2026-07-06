@@ -78,6 +78,7 @@ class FundamentalsOut(BaseModel):
     pe: float | None
     forward_pe: float | None
     market_cap: float | None
+    next_earnings_date: date | None = None
     source: str
     ingested_at: datetime
 

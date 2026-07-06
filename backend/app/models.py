@@ -89,6 +89,10 @@ class FactInsiderTrade(Base):
     is_director: Mapped[bool | None] = mapped_column(default=None)
     transaction_date: Mapped[date] = mapped_column(Date)
     code: Mapped[str] = mapped_column(String(4))  # Form 4 transaction code: P, S, A, ...
+    # Form 4 "made pursuant to a Rule 10b5-1(c) plan" checkbox: pre-scheduled
+    # trades carry no timing signal. None = filed before we parsed the flag
+    # (backfill with `python -m app.cli backfill-10b51`).
+    is_10b5_1: Mapped[bool | None] = mapped_column(default=None)
     shares: Mapped[float | None] = mapped_column(Float)
     price: Mapped[float | None] = mapped_column(Float)
     value: Mapped[float | None] = mapped_column(Float)
@@ -130,6 +134,7 @@ class FactFundamentals(Base):
     total_cash: Mapped[float | None] = mapped_column(Float)
     quarterly_operating_cashflow: Mapped[float | None] = mapped_column(Float)
     insider_ownership_pct: Mapped[float | None] = mapped_column(Float)
+    next_earnings_date: Mapped[date | None] = mapped_column(Date)
     raw: Mapped[dict[str, Any] | None] = mapped_column(JsonCol)
     source: Mapped[str] = mapped_column(String(32), default="yfinance")
     ingested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

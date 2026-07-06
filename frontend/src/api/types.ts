@@ -48,6 +48,7 @@ export interface Fundamentals {
   pe: number | null;
   forward_pe: number | null;
   market_cap: number | null;
+  next_earnings_date: string | null;
   source: string;
 }
 
@@ -159,7 +160,7 @@ export interface AlertItem {
   id: number;
   created_at: string;
   ticker: string;
-  kind: "congress_trade" | "insider_trade" | "score_cross";
+  kind: "congress_trade" | "insider_trade" | "score_cross" | "risk_flag";
   title: string;
   body: string;
   seen: boolean;

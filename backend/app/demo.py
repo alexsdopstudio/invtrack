@@ -34,6 +34,10 @@ DISCOVERY_TICKERS = {
     "CRWD": ("CrowdStrike Holdings, Inc.", "0001535527", "Technology"),
 }
 
+# Benchmark for excess-return comparisons; gets a dim row (so /stats works)
+# and prices, but no watchlist/discovery/scoring role.
+BENCHMARK = {"SPY": ("SPDR S&P 500 ETF Trust", "0000884394", None)}
+
 
 def _d(days_ago: int) -> str:
     return (date.today() - timedelta(days=days_ago)).strftime("%m/%d/%Y")
@@ -68,7 +72,7 @@ def _house_row(rep, ticker, tx_type, amount, tx_days_ago, disclosure_days_ago):
 def seed_demo(db: Session) -> dict[str, int]:
     counts: dict[str, int] = {}
 
-    all_dims = {**DEMO_TICKERS, **DISCOVERY_TICKERS}
+    all_dims = {**DEMO_TICKERS, **DISCOVERY_TICKERS, **BENCHMARK}
     counts["tickers"] = upsert_tickers(
         db,
         [
@@ -126,7 +130,7 @@ def seed_demo(db: Session) -> dict[str, int]:
         parse_stock_watcher_rows(senate, "senate") + parse_stock_watcher_rows(house, "house"),
     )
 
-    def insider(acc, ticker, cik, name, title, officer, days_ago, code, shares, price):
+    def insider(acc, ticker, cik, name, title, officer, days_ago, code, shares, price, plan=None):
         return {
             "accession_no": acc,
             "row_index": 0,
@@ -138,6 +142,7 @@ def seed_demo(db: Session) -> dict[str, int]:
             "is_director": not officer,
             "transaction_date": date.today() - timedelta(days=days_ago),
             "code": code,
+            "is_10b5_1": plan,
             "shares": shares,
             "price": price,
             "value": shares * price,
@@ -151,7 +156,9 @@ def seed_demo(db: Session) -> dict[str, int]:
             insider("0000000000-25-000002", "NVDA", "0001045810", "Rivera Example", None, False, 12, "P", 2000, 132.5),
             insider("0000000000-25-000003", "AAPL", "0000320193", "Kim Example", "CFO", True, 30, "S", 10000, 210.0),
             insider("0000000000-25-000004", "MSFT", "0000789019", "Osei Example", "VP Eng", True, 22, "P", 1500, 420.0),
-            insider("0000000000-25-000005", "UNH", "0000731766", "Novak Example", "CEO", True, 18, "S", 8000, 480.0),
+            # Pre-scheduled 10b5-1 plan sale: excluded from the insider score
+            # (plan_sale_discount), still visible in the trades table.
+            insider("0000000000-25-000005", "UNH", "0000731766", "Novak Example", "CEO", True, 18, "S", 8000, 480.0, plan=True),
             insider("0000000000-25-000006", "UNH", "0000731766", "Patel Example", None, False, 10, "S", 3000, 465.0),
             # CRWD cluster: three distinct open-market buyers inside 30 days —
             # what the market-wide Form 4 scan surfaces on the Insider Radar.
@@ -186,10 +193,29 @@ def seed_demo(db: Session) -> dict[str, int]:
                  "quarterly_operating_cashflow": -5.0e7, "insider_ownership_pct": 0.13},
         # AVGO stays congress-only on purpose (missing-data paths in Radar + screener)
     }
+    # Next earnings dates: NVDA reports inside the 14-day window (drives the
+    # "earnings soon" risk flag), MSFT comfortably later, the rest unknown.
+    earnings = {"NVDA": 10, "MSFT": 40}
+    for t, days_ahead in earnings.items():
+        fundamentals[t]["next_earnings_date"] = date.today() + timedelta(days=days_ahead)
+
     counts["fundamentals"] = sum(
         upsert_snapshot(db, t, {**snap, "raw": {"demo": True}}, date.today())
         for t, snap in fundamentals.items()
     )
+
+    # Older snapshots (~1 quarter back) so the fundamentals trend adjustment
+    # is visible: NVDA's growth just accelerated, UNH's margin deteriorated.
+    trend_overrides = {
+        "NVDA": {"revenue_growth_yoy": 0.55},
+        "UNH": {"operating_margin": 0.11},
+    }
+    for t, overrides in trend_overrides.items():
+        old_snap = {**fundamentals[t], **overrides, "raw": {"demo": True, "older": True}}
+        old_snap.pop("next_earnings_date", None)
+        counts["fundamentals"] += upsert_snapshot(
+            db, t, old_snap, date.today() - timedelta(days=90)
+        )
 
     rng = random.Random(42)
     # SPY is the benchmark for excess-return comparisons (track record page).

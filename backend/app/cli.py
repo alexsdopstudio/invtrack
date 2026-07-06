@@ -1,9 +1,10 @@
 """Command-line entry points:
 
     python -m app.cli init-db          # create tables (quick start; Alembic for Supabase)
-    python -m app.cli ingest all       # or one of: tickers congress insider fundamentals prices
+    python -m app.cli ingest all       # or one of: tickers congress insider insider_scan fundamentals prices
     python -m app.cli score            # recompute composite scores
     python -m app.cli seed-demo        # load synthetic demo data (no network needed)
+    python -m app.cli backfill-10b51   # re-fetch old Form 4s to fill the 10b5-1 plan flag (network)
 """
 
 import argparse
@@ -24,6 +25,7 @@ def main() -> None:
     ingest.add_argument("source", choices=[*ALL_SOURCES, "all"])
     sub.add_parser("score")
     sub.add_parser("seed-demo")
+    sub.add_parser("backfill-10b51")
     args = parser.parse_args()
 
     if args.command == "init-db":
@@ -51,6 +53,11 @@ def main() -> None:
             Base.metadata.create_all(db_engine)
             for source, count in seed_demo(db).items():
                 print(f"{source}: {count} rows")
+        elif args.command == "backfill-10b51":
+            from .backfill import backfill_10b51
+
+            updated, failed = backfill_10b51(db)
+            print(f"updated {updated} trades ({failed} filings failed)")
 
 
 if __name__ == "__main__":

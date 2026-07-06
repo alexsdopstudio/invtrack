@@ -118,15 +118,28 @@ Weights and thresholds live in [`backend/scoring.yaml`](backend/scoring.yaml)
   plus a bonus when ≥3 members trade the same direction within 30 days.
 - **Insider (0.20)** — Form 4 open-market buys minus discounted sells
   (insider selling is noisy; buying is the signal), with a multi-insider
-  cluster bonus.
-- **Momentum (0.15)** — price vs its own 50/200-day moving averages; trend
-  confirmation, not prediction.
+  cluster bonus. Officer buys are weighted above unaffiliated filers
+  (`officer_weight`), and sales flagged as pre-scheduled **Rule 10b5-1 plan
+  trades are excluded entirely** — they carry no timing signal. Rows ingested
+  before the flag existed can be backfilled with
+  `python -m app.cli backfill-10b51` (re-fetches the filings from EDGAR).
+- **Momentum (0.15)** — price vs its own 50/200-day moving averages **plus
+  relative strength vs the benchmark** (up 5% while the market is up 20% is
+  lagging, not leading); trend confirmation, not prediction. Falls back to
+  MA-only when benchmark history is missing.
+
+Fundamentals also get a **trend adjustment**: when an older snapshot (≥60
+days) exists, a metric that improved/deteriorated by ≥2pp gets a band bonus
+or penalty — a company whose margin just inflected up no longer scores the
+same as one collapsing to the same level.
 
 Every ticker page also shows a **score timeline** (last computation per day,
 with per-component contribution deltas — "why did my score change"), and
 **risk flags** computed independently of the score: insider selling clusters,
 congressional net selling, price below the 200-day average, deep drawdowns,
-and short cash runway.
+short cash runway, and earnings scheduled within 14 days (a binary event that
+can invalidate any research done today). Serious flags also fire an alert the
+first time they appear on a watchlist ticker.
 
 ## Track record — does the score work?
 

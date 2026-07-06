@@ -33,7 +33,9 @@ _RAW_KEYS = [
 
 
 def snapshot_from_info(
-    info: dict[str, Any], quarterly_ocf: float | None = None
+    info: dict[str, Any],
+    quarterly_ocf: float | None = None,
+    next_earnings: date | None = None,
 ) -> dict[str, Any]:
     d2e = info.get("debtToEquity")
     return {
@@ -48,8 +50,20 @@ def snapshot_from_info(
         "total_cash": info.get("totalCash"),
         "quarterly_operating_cashflow": quarterly_ocf,
         "insider_ownership_pct": info.get("heldPercentInsiders"),
+        "next_earnings_date": next_earnings,
         "raw": {k: info.get(k) for k in _RAW_KEYS if k in info},
     }
+
+
+def next_earnings_from_calendar(calendar) -> date | None:
+    """Next scheduled earnings date from a yfinance Ticker.calendar payload
+    (dict with an 'Earnings Date' list of dates, shape drifts — isolated)."""
+    try:
+        dates = (calendar or {}).get("Earnings Date") or []
+        future = sorted(d for d in dates if isinstance(d, date) and d >= date.today())
+        return future[0] if future else None
+    except Exception:  # noqa: BLE001 - unofficial source, shapes drift
+        return None
 
 
 def latest_quarterly_ocf(quarterly_cashflow) -> float | None:
@@ -98,7 +112,11 @@ def ingest(db: Session) -> int:
         try:
             yft = yf.Ticker(ticker)
             info = yft.info or {}
-            snapshot = snapshot_from_info(info, latest_quarterly_ocf(yft.quarterly_cashflow))
+            snapshot = snapshot_from_info(
+                info,
+                latest_quarterly_ocf(yft.quarterly_cashflow),
+                next_earnings_from_calendar(yft.calendar),
+            )
             count += upsert_snapshot(db, ticker, snapshot, date.today())
             sector = info.get("sector")
             if sector:

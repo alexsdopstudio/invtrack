@@ -6,6 +6,7 @@ const KIND_META: Record<string, { icon: string; label: string }> = {
   congress_trade: { icon: "🏛", label: "Congress" },
   insider_trade: { icon: "👤", label: "Insider" },
   score_cross: { icon: "⚡", label: "Score" },
+  risk_flag: { icon: "⛔", label: "Risk" },
 };
 
 function relativeTime(iso: string): string {
