@@ -235,3 +235,17 @@ export interface PoliticianRow {
   weight: number;
   last_activity: string | null;
 }
+
+export interface InsiderIdeaRow {
+  ticker: string;
+  name: string | null;
+  sector: string | null;
+  score: number | null;
+  components: Record<string, unknown> | null;
+  buyers: number;
+  buys: number;
+  total_value: number;
+  last_activity: string | null;
+  last_close: number | null;
+  sparkline: number[];
+}

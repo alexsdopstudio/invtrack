@@ -49,6 +49,19 @@ class Settings(BaseSettings):
     # webhook receivers all understand. Empty = in-app alerts only.
     alert_webhook_url: str = ""
 
+    # Market-wide Form 4 scan (insider cluster-buy discovery). Walks EDGAR's
+    # daily index of ALL filings and keeps open-market purchases >= the
+    # minimum size; ~30 min/day of polite crawling at the shared throttle.
+    insider_scan_enabled: bool = True
+    insider_scan_days: int = 1  # business days of daily indexes per run
+    insider_scan_min_buy: float = 25000.0
+
+    # Optional screener universe: path to a text file of tickers (one per
+    # line, # comments allowed) that also get fundamentals/prices ingested,
+    # e.g. an S&P 500 list. Capped to universe_limit to respect rate limits.
+    universe_file: str = ""
+    universe_limit: int = 200
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

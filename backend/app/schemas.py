@@ -130,6 +130,20 @@ class IdeaRow(BaseModel):
     sparkline: list[float]
 
 
+class InsiderIdeaRow(BaseModel):
+    ticker: str
+    name: str | None
+    sector: str | None
+    score: float | None
+    components: dict[str, Any] | None
+    buyers: int
+    buys: int
+    total_value: float
+    last_activity: date | None
+    last_close: float | None
+    sparkline: list[float]
+
+
 class PriceStats(BaseModel):
     ticker: str
     cagr_1y: float

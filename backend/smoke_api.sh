@@ -74,12 +74,14 @@ jqcheck "breakdown provenance complete" "all(c['status']=='ok' and c['source'] a
 jqcheck "contributions sum to total" "abs(sum(c['contribution'] for c in d['components'].values()) - d['total']) < 0.1"
 check "breakdown unknown ticker" 404 GET /api/scores/ZZZTOP
 check "recompute" 200 POST /api/scores/recompute
-jqcheck "recompute covers watchlist + discovery" "len(d) == 6"
+jqcheck "recompute covers watchlist + discovery" "len(d) == 7"
 
 echo "--- ideas (Radar) & stats ---"
 check "ideas" 200 GET /api/ideas
 jqcheck "discovery tickers surfaced, ranked" "[r['ticker'] for r in d] == ['PLTR','AVGO'] and d[0]['buys'] == 3 and d[0]['buyers'] == 3"
 jqcheck "idea carries score + sparkline" "d[0]['score'] is not None and len(d[0]['sparkline']) > 30"
+check "insider radar" 200 GET /api/ideas/insider
+jqcheck "CRWD cluster surfaced with buyers + dollars" "d[0]['ticker'] == 'CRWD' and d[0]['buyers'] == 3 and d[0]['total_value'] > 0"
 check "price stats" 200 GET /api/tickers/NVDA/stats
 jqcheck "stats fields plausible" "d['data_points'] > 200 and 0 < d['annual_vol'] < 2 and d['max_drawdown'] <= 0"
 check "stats without history -> 404" 404 GET /api/tickers/AVGO/stats

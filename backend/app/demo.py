@@ -29,6 +29,9 @@ DEMO_TICKERS = {
 DISCOVERY_TICKERS = {
     "PLTR": ("Palantir Technologies Inc.", "0001321655", "Technology"),
     "AVGO": ("Broadcom Inc.", "0001730168", "Technology"),
+    # Insider Radar material: found by the market-wide Form 4 scan, no
+    # congressional activity at all.
+    "CRWD": ("CrowdStrike Holdings, Inc.", "0001535527", "Technology"),
 }
 
 
@@ -150,6 +153,11 @@ def seed_demo(db: Session) -> dict[str, int]:
             insider("0000000000-25-000004", "MSFT", "0000789019", "Osei Example", "VP Eng", True, 22, "P", 1500, 420.0),
             insider("0000000000-25-000005", "UNH", "0000731766", "Novak Example", "CEO", True, 18, "S", 8000, 480.0),
             insider("0000000000-25-000006", "UNH", "0000731766", "Patel Example", None, False, 10, "S", 3000, 465.0),
+            # CRWD cluster: three distinct open-market buyers inside 30 days —
+            # what the market-wide Form 4 scan surfaces on the Insider Radar.
+            insider("0000000000-25-000007", "CRWD", "0001535527", "Ito Example", "CEO", True, 16, "P", 2000, 310.0),
+            insider("0000000000-25-000008", "CRWD", "0001535527", "Mora Example", "CFO", True, 12, "P", 1200, 318.0),
+            insider("0000000000-25-000009", "CRWD", "0001535527", "Sy Example", None, False, 7, "P", 900, 325.0),
         ],
     )
 
@@ -185,8 +193,8 @@ def seed_demo(db: Session) -> dict[str, int]:
 
     rng = random.Random(42)
     # SPY is the benchmark for excess-return comparisons (track record page).
-    start_prices = {"AAPL": 195.0, "MSFT": 410.0, "NVDA": 105.0, "UNH": 520.0, "PLTR": 24.0, "SPY": 520.0}
-    drift = {"AAPL": 0.0004, "MSFT": 0.0006, "NVDA": 0.0018, "UNH": -0.0012, "PLTR": 0.0022, "SPY": 0.0005}
+    start_prices = {"AAPL": 195.0, "MSFT": 410.0, "NVDA": 105.0, "UNH": 520.0, "PLTR": 24.0, "CRWD": 290.0, "SPY": 520.0}
+    drift = {"AAPL": 0.0004, "MSFT": 0.0006, "NVDA": 0.0018, "UNH": -0.0012, "PLTR": 0.0022, "CRWD": 0.0014, "SPY": 0.0005}
     # The benchmark moves like an index (diversified -> low daily noise);
     # single stocks keep their much larger idiosyncratic wiggle.
     noise = {"SPY": 0.004}

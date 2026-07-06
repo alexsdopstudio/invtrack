@@ -162,6 +162,19 @@ silently dragged down by an empty source. Every score row stores the full
 per-component breakdown (value, weight, contribution, inputs, source, data
 timestamps) so the UI can always answer "why is this score what it is?".
 
+## Market-wide insider discovery
+
+The dashboard's second Radar — **"insiders are buying"** — comes from a scan
+of EDGAR's official daily index of *every* Form 4 filed, keeping open-market
+purchases (code P) of at least `INSIDER_SCAN_MIN_BUY` (default $25k). When two
+or more distinct insiders of the same company buy within 30 days, the ticker
+surfaces automatically and gets fundamentals/prices/scores like any other
+discovery candidate — this is how the tool finds stocks you've never searched
+for. The scan runs with the daily refresh and takes ~30 minutes of throttled,
+SEC-etiquette crawling per trading day (`INSIDER_SCAN_ENABLED=false` to opt
+out). Rows are stored with source `sec_edgar_scan` and full raw provenance,
+idempotent per filing.
+
 ## Screener
 
 The **Screener** page runs every tracked + Radar ticker through an
@@ -173,6 +186,12 @@ inputs come from free sources (yfinance + ingested prices); a criterion with
 no data reports **unknown**, never a silent verdict. Congress-sourced
 candidates are mostly mega-caps and will fail the size criterion — that's the
 filter working as intended.
+
+To screen beyond watchlist + discovery names, point `UNIVERSE_FILE` at a text
+file of tickers (one per line — e.g. an S&P 500 or Russell constituents list
+you drop in): they're added to fundamentals/prices ingestion (capped by
+`UNIVERSE_LIMIT`, default 200, to respect free-tier rate limits) and flow into
+the screener automatically.
 
 ## AI filing analysis (optional, paid)
 

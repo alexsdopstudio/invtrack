@@ -36,12 +36,13 @@ def run_job(db: Session, source: str, fn: Callable[[Session], int]) -> Ingestion
 def run_sources(db: Session, sources: list[str]) -> list[IngestionRun]:
     # Imported lazily so a broken optional dependency (e.g. yfinance) only
     # affects its own source.
-    from . import congress, fundamentals, insider, prices, tickers
+    from . import congress, fundamentals, insider, insider_marketwide, prices, tickers
 
     jobs: dict[str, Callable[[Session], int]] = {
         "tickers": tickers.ingest,
         "congress": congress.ingest,
         "insider": insider.ingest,
+        "insider_scan": insider_marketwide.ingest,
         "fundamentals": fundamentals.ingest,
         "prices": prices.ingest,
     }
@@ -53,4 +54,6 @@ def run_sources(db: Session, sources: list[str]) -> list[IngestionRun]:
     return runs
 
 
-ALL_SOURCES = ["tickers", "congress", "insider", "fundamentals", "prices"]
+# insider_scan runs before fundamentals/prices so freshly discovered
+# cluster-buy tickers get enriched (and scored) in the same pass.
+ALL_SOURCES = ["tickers", "congress", "insider", "insider_scan", "fundamentals", "prices"]

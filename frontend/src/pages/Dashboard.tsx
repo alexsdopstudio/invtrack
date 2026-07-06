@@ -4,6 +4,7 @@ import { api } from "../api/client";
 import AlertsPanel from "../components/AlertsPanel";
 import ComponentBars from "../components/ComponentBars";
 import HowToRead from "../components/HowToRead";
+import InsiderRadarTable from "../components/InsiderRadarTable";
 import RadarTable from "../components/RadarTable";
 import ScoreBadge from "../components/ScoreBadge";
 import Sparkline from "../components/Sparkline";
@@ -55,6 +56,8 @@ export default function Dashboard() {
       <AlertsPanel />
 
       <RadarTable />
+
+      <InsiderRadarTable />
 
       <section className="flex flex-col gap-2">
         <div>

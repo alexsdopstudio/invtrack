@@ -7,7 +7,12 @@ from typing import Any
 from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
-from .ingestion.targets import DISCOVERY_WINDOW_DAYS, activity_date
+from .ingestion.targets import (
+    DISCOVERY_WINDOW_DAYS,
+    INSIDER_CLUSTER_MIN_BUYERS,
+    INSIDER_CLUSTER_WINDOW_DAYS,
+    activity_date,
+)
 from .models import (
     DimTicker,
     FactCongressTrade,
@@ -185,6 +190,75 @@ def idea_rows(db: Session, limit: int = 20) -> list[dict]:
     for r in rows:
         r["sparkline"] = sparklines.get(r["ticker"], [])
         r["net_dollars"] = round(r["net_dollars"] or 0.0, 2)
+    return rows
+
+
+def insider_idea_rows(db: Session, limit: int = 20) -> list[dict]:
+    """Insider Radar: non-watchlist tickers where several distinct insiders
+    bought on the open market recently (market-wide Form 4 scan), ranked by
+    score (when available) then by total buy dollars."""
+    since = date.today() - timedelta(days=INSIDER_CLUSTER_WINDOW_DAYS)
+    t = FactInsiderTrade
+    clusters = (
+        select(
+            t.ticker,
+            func.count(func.distinct(t.insider_name)).label("buyers"),
+            func.count(t.id).label("buys"),
+            func.sum(func.coalesce(t.value, 0.0)).label("total_value"),
+            func.max(t.transaction_date).label("last_activity"),
+        )
+        .where(
+            t.code == "P",
+            t.transaction_date >= since,
+            t.ticker != "",
+            t.ticker.not_in(select(WatchlistItem.ticker)),
+        )
+        .group_by(t.ticker)
+        .having(func.count(func.distinct(t.insider_name)) >= INSIDER_CLUSTER_MIN_BUYERS)
+        .cte("insider_clusters")
+    )
+    ranked_scores = latest_score_cte()
+    last_price = (
+        select(FactPrice.ticker, func.max(FactPrice.date).label("last_date"))
+        .group_by(FactPrice.ticker)
+        .cte("cluster_last_price")
+    )
+
+    stmt = (
+        select(
+            clusters.c.ticker,
+            clusters.c.buyers,
+            clusters.c.buys,
+            clusters.c.total_value,
+            clusters.c.last_activity,
+            DimTicker.name,
+            DimTicker.sector,
+            ranked_scores.c.total.label("score"),
+            ranked_scores.c.components,
+            FactPrice.close.label("last_close"),
+        )
+        .outerjoin(DimTicker, DimTicker.ticker == clusters.c.ticker)
+        .outerjoin(
+            ranked_scores,
+            (ranked_scores.c.ticker == clusters.c.ticker) & (ranked_scores.c.rn == 1),
+        )
+        .outerjoin(last_price, last_price.c.ticker == clusters.c.ticker)
+        .outerjoin(
+            FactPrice,
+            (FactPrice.ticker == last_price.c.ticker)
+            & (FactPrice.date == last_price.c.last_date),
+        )
+        .order_by(
+            ranked_scores.c.total.desc().nulls_last(),
+            clusters.c.total_value.desc(),
+        )
+        .limit(limit)
+    )
+    rows = [dict(r._mapping) for r in db.execute(stmt)]
+    sparklines = _sparklines(db, [r["ticker"] for r in rows])
+    for r in rows:
+        r["sparkline"] = sparklines.get(r["ticker"], [])
+        r["total_value"] = round(r["total_value"] or 0.0, 2)
     return rows
 
 

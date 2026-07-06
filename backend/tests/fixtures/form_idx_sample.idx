@@ -1,0 +1,15 @@
+Description:           Daily Index of EDGAR Dissemination Feed by Form Type
+Last Data Received:    July 2, 2026
+Comments:              webmaster@sec.gov
+Anonymous FTP:         ftp://ftp.sec.gov/edgar/
+
+
+
+Form Type   Company Name                                                  CIK         Date Filed  File Name
+---------------------------------------------------------------------------------------------------------------
+10-K        ACME MANUFACTURING CORP                                       1000001     20260702    edgar/data/1000001/0001000001-26-000101.txt
+4           DOE JANE                                                      1535527     20260702    edgar/data/1535527/0001535527-26-000456.txt
+4           SMITH JOHN Q                                                  1045810     20260702    edgar/data/1045810/0001045810-26-000789.txt
+4/A         ROE RICHARD                                                   731766      20260702    edgar/data/731766/0000731766-26-000234.txt
+8-K         GLOBEX CORP                                                   1000002     20260702    edgar/data/1000002/0001000002-26-000102.txt
+SC 13G      SHADY HOLDINGS LLC                                            1000003     20260702    edgar/data/1000003/0001000003-26-000103.txt
