@@ -50,7 +50,12 @@ def _history_rows(history) -> list[dict[str, Any]]:
 def ingest(db: Session) -> int:
     import yfinance as yf
 
-    tickers = targets.target_tickers(db)
+    from ..config import get_scoring_config
+
+    # Benchmark closes are needed for excess-return comparisons (track record,
+    # politician leaderboard); it is not scored or shown as a holding.
+    benchmark = get_scoring_config()["benchmark_ticker"]
+    tickers = [*targets.target_tickers(db), benchmark]
     count = 0
     errors = []
     for ticker in tickers:

@@ -189,3 +189,49 @@ export interface IngestionRun {
   rows_upserted: number;
   error: string | null;
 }
+
+export interface TrackRecordHorizon {
+  n: number;
+  mean_excess: number | null;
+  hit_rate: number | null;
+}
+
+export interface TrackRecordBand {
+  band: "bearish" | "neutral" | "bullish";
+  horizons: Record<string, TrackRecordHorizon>;
+}
+
+export interface TrackRecordComponent {
+  component: string;
+  n: number;
+  horizon_days: number;
+  bottom_mean_excess: number | null;
+  top_mean_excess: number | null;
+  spread: number | null;
+}
+
+export interface TrackRecordSummary {
+  benchmark: string;
+  as_of: string;
+  samples: number;
+  insufficient_data: boolean;
+  min_samples: number;
+  bands: TrackRecordBand[];
+  components: TrackRecordComponent[];
+  note: string;
+}
+
+export interface PoliticianRow {
+  chamber: "senate" | "house";
+  member: string;
+  trades: number;
+  buys: number;
+  sells: number;
+  tickers: number;
+  measured_buys: number;
+  horizon_days: number;
+  mean_excess: number | null;
+  hit_rate: number | null;
+  weight: number;
+  last_activity: string | null;
+}

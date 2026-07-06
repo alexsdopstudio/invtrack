@@ -5,6 +5,7 @@ import DisclaimerBanner from "./components/DisclaimerBanner";
 import Dashboard from "./pages/Dashboard";
 import ScreenerPage from "./pages/Screener";
 import TickerDetailPage from "./pages/TickerDetail";
+import TrackRecordPage from "./pages/TrackRecord";
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   `rounded-md px-2 py-1 text-sm ${isActive ? "font-semibold text-ink" : "text-ink-2 hover:text-ink"}`;
@@ -44,6 +45,9 @@ export default function App() {
             <NavLink to="/screener" className={navClass}>
               Screener
             </NavLink>
+            <NavLink to="/track-record" className={navClass}>
+              Track record
+            </NavLink>
           </nav>
           <span className="ml-auto hidden text-sm text-ink-2 sm:inline">
             congressional + insider + fundamentals research
@@ -55,6 +59,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/screener" element={<ScreenerPage />} />
+          <Route path="/track-record" element={<TrackRecordPage />} />
           <Route path="/ticker/:ticker" element={<TickerDetailPage />} />
         </Routes>
       </main>

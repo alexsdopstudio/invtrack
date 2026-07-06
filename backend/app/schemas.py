@@ -197,6 +197,52 @@ class ScoreHistoryEntry(BaseModel):
     total_delta: float | None
 
 
+class TrackRecordHorizon(BaseModel):
+    n: int
+    mean_excess: float | None
+    hit_rate: float | None
+
+
+class TrackRecordBand(BaseModel):
+    band: str  # bearish | neutral | bullish
+    horizons: dict[str, TrackRecordHorizon]
+
+
+class TrackRecordComponent(BaseModel):
+    component: str
+    n: int
+    horizon_days: int
+    bottom_mean_excess: float | None
+    top_mean_excess: float | None
+    spread: float | None
+
+
+class TrackRecordSummary(BaseModel):
+    benchmark: str
+    as_of: date
+    samples: int
+    insufficient_data: bool
+    min_samples: int
+    bands: list[TrackRecordBand]
+    components: list[TrackRecordComponent]
+    note: str
+
+
+class PoliticianRow(BaseModel):
+    chamber: str
+    member: str
+    trades: int
+    buys: int
+    sells: int
+    tickers: int
+    measured_buys: int
+    horizon_days: int
+    mean_excess: float | None
+    hit_rate: float | None
+    weight: float
+    last_activity: date | None
+
+
 class IngestionRunOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

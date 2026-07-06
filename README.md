@@ -128,6 +128,22 @@ with per-component contribution deltas — "why did my score change"), and
 congressional net selling, price below the 200-day average, deep drawdowns,
 and short cash runway.
 
+## Track record — does the score work?
+
+The **Track record** page makes InvTrack grade its own homework: every stored
+score is joined with what the price actually did 30/90 days later, measured as
+**excess return over the benchmark** (`benchmark_ticker` in `scoring.yaml`,
+default SPY — its prices are ingested automatically). It shows, per score band
+(bullish/neutral/bearish), the sample count, average excess return and
+market-beat rate, plus a per-component read (top-third vs bottom-third
+component scores) so you can see which signals carry weight and retune
+`scoring.yaml` accordingly. Below it, a **politician leaderboard** ranks every
+member by the excess return following their disclosed buys — and members with
+a proven, measurable record get proportionally more weight in the congress
+component (`congress.member_weighting`, on by default; members without enough
+history always weigh 1.0). Small samples are reported as insufficient, never
+dressed up as proof.
+
 ## Auto-refresh & alerts
 
 A background scheduler ingests all sources, rescores, and runs alert

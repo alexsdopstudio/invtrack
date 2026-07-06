@@ -6,7 +6,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from . import scheduler
 from .analysis.report import analysis_enabled
 from .config import get_settings
-from .routers import alerts, analysis, ideas, ingest, scores, screener, tickers, watchlist
+from .routers import (
+    alerts,
+    analysis,
+    ideas,
+    ingest,
+    scores,
+    screener,
+    tickers,
+    trackrecord,
+    watchlist,
+)
 
 DISCLAIMER = (
     "InvTrack is a personal research aid, not financial advice. It never issues "
@@ -39,6 +49,7 @@ app.include_router(screener.router)
 app.include_router(analysis.router)
 app.include_router(tickers.router)
 app.include_router(scores.router)
+app.include_router(trackrecord.router)
 app.include_router(ingest.router)
 
 

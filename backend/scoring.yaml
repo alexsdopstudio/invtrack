@@ -8,6 +8,18 @@ weights:
   insider: 0.20
   momentum: 0.15
 
+# Benchmark used for excess-return comparisons (track record, politician
+# leaderboard). Its prices are ingested alongside watchlist tickers.
+benchmark_ticker: SPY
+
+track_record:
+  # "Does the score work?" — historical scores joined with what the price did
+  # afterwards, vs the benchmark. Purely descriptive, never a forecast.
+  horizons_days: [30, 90]
+  # Below this many measurable samples the page reports insufficient_data
+  # instead of pretending noise is signal.
+  min_samples: 8
+
 momentum:
   # Price vs its own 50/200-day moving averages — trend confirmation, not
   # prediction. Blend of percent distances, squashed with tanh(blend/scale):
@@ -32,6 +44,16 @@ congress:
   cluster_min_members: 3
   cluster_window_days: 30
   cluster_bonus: 10
+  # Skill weighting: a member's trade dollars are scaled by their own
+  # historical track record (mean excess return 90 days after their disclosed
+  # buys, vs the benchmark). Members without enough measurable history get
+  # weight 1.0 — never penalized for missing data.
+  member_weighting:
+    enabled: true
+    min_trades: 2        # measurable past buys required before weighting kicks in
+    horizon_days: 90
+    min_weight: 0.5
+    max_weight: 1.5
 
 insider:
   lookback_days: 90

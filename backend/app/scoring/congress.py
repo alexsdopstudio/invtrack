@@ -39,15 +39,25 @@ def compute(db: Session, ticker: str, config: dict[str, Any], today: date) -> di
     if not trades:
         return None
 
+    # Skill weighting: scale each member's dollars by their own historical
+    # track record (see trackrecord.member_weights). {} when disabled or when
+    # too few members have measurable history — everyone then counts as 1.0.
+    from ..trackrecord import member_weights  # local import: avoid module cycle
+
+    weights = member_weights(db, config, today)
+
     half_life = cfg["decay_half_life_days"]
     net = 0.0
     buys = sells = 0
+    weights_used: dict[str, float] = {}
     for t in trades:
         signal_date = t.disclosure_date or t.transaction_date
         age = (today - signal_date).days
         decay = 0.5 ** (age / half_life)
         sign = 1.0 if t.tx_type == "buy" else -1.0
-        net += sign * _midpoint(t.amount_low, t.amount_high) * decay
+        member_weight = weights.get(t.member, 1.0)
+        weights_used[t.member] = member_weight
+        net += sign * _midpoint(t.amount_low, t.amount_high) * decay * member_weight
         buys += t.tx_type == "buy"
         sells += t.tx_type == "sell"
 
@@ -77,6 +87,7 @@ def compute(db: Session, ticker: str, config: dict[str, Any], today: date) -> di
             "net_decayed_dollars": round(net, 2),
             "lookback_days": cfg["lookback_days"],
             "cluster": cluster,
+            "member_weights": weights_used,
             "note": "lagging signal: disclosures are legally delayed up to 45 days",
         },
     }

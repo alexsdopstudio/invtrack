@@ -58,7 +58,7 @@ check "unknown ticker detail" 404 GET /api/tickers/ZZZTOP
 
 echo "--- per-ticker feeds ---"
 check "congress trades" 200 GET /api/tickers/NVDA/congress-trades
-jqcheck "congress rows present, sorted desc" "len(d) == 4 and d[0]['transaction_date'] >= d[-1]['transaction_date']"
+jqcheck "congress rows present, sorted desc" "len(d) == 6 and d[0]['transaction_date'] >= d[-1]['transaction_date']"
 check "insider trades" 200 GET /api/tickers/NVDA/insider-trades
 jqcheck "insider rows present" "len(d) == 2 and d[0]['code'] == 'P'"
 check "prices" 200 GET "/api/tickers/NVDA/prices?days=90"
@@ -104,6 +104,13 @@ jqcheck "marked count returned" "d['marked'] >= 0"
 jqcheck_health() { curl -s "$B/api/health" > /tmp/last_body; }
 jqcheck_health
 jqcheck "health reports auto refresh + momentum in scores" "d['auto_refresh_enabled'] in (True, False)"
+
+echo "--- track record & politicians ---"
+check "track record" 200 GET /api/track-record
+jqcheck "track record vs benchmark with bands" "d['benchmark'] == 'SPY' and len(d['bands']) == 3 and d['samples'] > 0"
+jqcheck "bullish band measured" "[b for b in d['bands'] if b['band']=='bullish'][0]['horizons']['90']['n'] > 0"
+check "politician leaderboard" 200 GET /api/politicians
+jqcheck "members ranked, skill weights present" "d[0]['mean_excess'] is not None and any(p['weight'] != 1.0 for p in d)"
 
 echo "--- ingest ---"
 check "unknown source" 404 POST /api/ingest/nonsense

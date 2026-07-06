@@ -8,6 +8,7 @@ import type {
   IngestionRun,
   InsiderTrade,
   PricePoint,
+  PoliticianRow,
   PriceStats,
   RiskFlag,
   ScoreHistoryEntry,
@@ -15,6 +16,7 @@ import type {
   ScreenerRow,
   TickerDetail,
   TickerSearchResult,
+  TrackRecordSummary,
 } from "./types";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -35,6 +37,8 @@ export const api = {
   scores: () => request<DashboardRow[]>("/api/scores"),
   ideas: () => request<IdeaRow[]>("/api/ideas"),
   screener: () => request<ScreenerRow[]>("/api/screener"),
+  trackRecord: () => request<TrackRecordSummary>("/api/track-record"),
+  politicians: () => request<PoliticianRow[]>("/api/politicians"),
   alerts: (unseenOnly = false) =>
     request<AlertItem[]>(`/api/alerts?unseen_only=${unseenOnly}`),
   markAlertsSeen: () => request<{ marked: number }>("/api/alerts/seen", { method: "POST" }),

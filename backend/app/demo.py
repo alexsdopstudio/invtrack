@@ -96,6 +96,20 @@ def seed_demo(db: Session) -> dict[str, int]:
         _senate_row("Sen. Beta Example", "PLTR", "Purchase", "$50,001 - $100,000", 18, 6),
         _senate_row("Sen. Gamma Example", "PLTR", "Purchase", "$15,001 - $50,000", 14, 3),
         _senate_row("Sen. Delta Example", "AVGO", "Purchase", "$50,001 - $100,000", 26, 11),
+        # Old, fully-elapsed trades: outside every scoring window, they exist
+        # to power the track-record page and politician leaderboard (forward
+        # returns need 90+ elapsed days). Alpha repeatedly bought the strong
+        # risers, Delta a steady faller — four windows each so the averaged
+        # excess return dominates the day-to-day noise and the two get
+        # visibly different skill weights.
+        _senate_row("Sen. Alpha Example", "PLTR", "Purchase", "$50,001 - $100,000", 250, 220),
+        _senate_row("Sen. Alpha Example", "NVDA", "Purchase", "$50,001 - $100,000", 230, 200),
+        _senate_row("Sen. Alpha Example", "PLTR", "Purchase", "$15,001 - $50,000", 205, 180),
+        _senate_row("Sen. Alpha Example", "NVDA", "Purchase", "$15,001 - $50,000", 175, 150),
+        _senate_row("Sen. Delta Example", "UNH", "Purchase", "$100,001 - $250,000", 280, 250),
+        _senate_row("Sen. Delta Example", "UNH", "Purchase", "$50,001 - $100,000", 260, 230),
+        _senate_row("Sen. Delta Example", "UNH", "Purchase", "$50,001 - $100,000", 250, 220),
+        _senate_row("Sen. Delta Example", "UNH", "Purchase", "$15,001 - $50,000", 220, 190),
     ]
     house = [
         _house_row("Rep. Epsilon Example", "NVDA", "purchase", "$1,001 - $15,000", 25, 5),
@@ -170,8 +184,12 @@ def seed_demo(db: Session) -> dict[str, int]:
     )
 
     rng = random.Random(42)
-    start_prices = {"AAPL": 195.0, "MSFT": 410.0, "NVDA": 105.0, "UNH": 520.0, "PLTR": 24.0}
-    drift = {"AAPL": 0.0004, "MSFT": 0.0006, "NVDA": 0.0018, "UNH": -0.0012, "PLTR": 0.0022}
+    # SPY is the benchmark for excess-return comparisons (track record page).
+    start_prices = {"AAPL": 195.0, "MSFT": 410.0, "NVDA": 105.0, "UNH": 520.0, "PLTR": 24.0, "SPY": 520.0}
+    drift = {"AAPL": 0.0004, "MSFT": 0.0006, "NVDA": 0.0018, "UNH": -0.0012, "PLTR": 0.0022, "SPY": 0.0005}
+    # The benchmark moves like an index (diversified -> low daily noise);
+    # single stocks keep their much larger idiosyncratic wiggle.
+    noise = {"SPY": 0.004}
     counts["prices"] = 0
     for ticker, price in start_prices.items():
         rows = []
@@ -180,7 +198,7 @@ def seed_demo(db: Session) -> dict[str, int]:
             d = date.today() - timedelta(days=days_ago)
             if d.weekday() >= 5:
                 continue
-            p *= 1 + drift[ticker] + rng.gauss(0, 0.015)
+            p *= 1 + drift[ticker] + rng.gauss(0, noise.get(ticker, 0.015))
             rows.append(
                 {
                     "date": d,
@@ -195,9 +213,10 @@ def seed_demo(db: Session) -> dict[str, int]:
 
     counts["scores"] = len(engine.compute_and_store(db))
 
-    # Backdated score history (past ~4 weeks) so the "why did my score
-    # change" timeline renders offline. Synthesized from the real latest
-    # breakdown with drifting contributions.
+    # Backdated score history (past ~5 months) so the "why did my score
+    # change" timeline renders offline AND the track-record page has scores
+    # old enough for 30/90-day forward returns. Synthesized from the real
+    # latest breakdown with drifting contributions.
     from .models import Score
 
     rng2 = random.Random(7)
@@ -205,10 +224,10 @@ def seed_demo(db: Session) -> dict[str, int]:
     counts["score_history"] = 0
     for s in latest_scores:
         drift_total = 0.0
-        for days_ago in range(28, 0, -3):
+        for days_ago in range(150, 0, -5):
             components = copy.deepcopy(s.components)
             wobble = rng2.uniform(-6, 6) + drift_total
-            drift_total -= rng2.uniform(-1.5, 3.0)  # trend gently toward today's score
+            drift_total -= rng2.uniform(-1.0, 1.0)  # gentle zero-mean walk
             total = max(0.0, min(100.0, s.total + wobble))
             scale = total / s.total if s.total else 1.0
             for comp in components.values():
