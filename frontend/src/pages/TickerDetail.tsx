@@ -5,8 +5,10 @@ import AnalyzeFiling from "../components/AnalyzeFiling";
 import FundamentalsPanel from "../components/FundamentalsPanel";
 import PriceChart from "../components/PriceChart";
 import ReturnsCalculator from "../components/ReturnsCalculator";
+import RiskFlags from "../components/RiskFlags";
 import ScoreBadge from "../components/ScoreBadge";
 import ScoreBreakdown from "../components/ScoreBreakdown";
+import ScoreHistory from "../components/ScoreHistory";
 import { CongressTradesTable, InsiderTradesTable } from "../components/TradesTables";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -80,8 +82,16 @@ export default function TickerDetailPage() {
         </p>
       )}
 
+      <Section title="Risk flags — reasons for caution regardless of the score">
+        <RiskFlags ticker={detail.ticker} />
+      </Section>
+
       <Section title="Why this score — component breakdown with provenance">
         {detail.score ? <ScoreBreakdown score={detail.score} /> : <p className="text-sm text-muted">No score yet.</p>}
+      </Section>
+
+      <Section title="Score over time — why it changed">
+        <ScoreHistory ticker={detail.ticker} />
       </Section>
 
       <Section title="Returns calculator — what could a given budget become?">

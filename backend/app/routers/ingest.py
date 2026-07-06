@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ..alerts import detect_alerts
 from ..db import get_db
 from ..ingestion.runner import ALL_SOURCES, run_sources
 from ..models import IngestionRun
@@ -20,6 +21,7 @@ def ingest(source: str, db: Session = Depends(get_db)):
     sources = ALL_SOURCES if source == "all" else [source]
     runs = run_sources(db, sources)
     engine.compute_and_store(db)
+    detect_alerts(db)
     return runs
 
 

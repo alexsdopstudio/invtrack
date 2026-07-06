@@ -40,6 +40,15 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     analysis_model: str = "claude-opus-4-8"
 
+    # Daily auto-refresh (ingest all sources + rescore + alert detection).
+    auto_refresh_enabled: bool = True
+    auto_refresh_hour: int = 7  # local server time
+
+    # Optional alert push: POSTs a JSON superset {title, body, text, content,
+    # ticker, kind} that Slack ("text"), Discord ("content"), ntfy and generic
+    # webhook receivers all understand. Empty = in-app alerts only.
+    alert_webhook_url: str = ""
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

@@ -39,6 +39,9 @@ def main() -> None:
                       + (f" — {run.error.splitlines()[0]}" if run.error else ""))
             stored = scoring_engine.compute_and_store(db)
             print(f"recomputed {len(stored)} scores")
+            from .alerts import detect_alerts
+
+            print(f"{len(detect_alerts(db))} new alerts")
         elif args.command == "score":
             for score in scoring_engine.compute_and_store(db):
                 print(f"{score.ticker}: {score.total}")

@@ -1,5 +1,6 @@
 import type {
   AiReport,
+  AlertItem,
   CongressTrade,
   DashboardRow,
   Health,
@@ -8,6 +9,8 @@ import type {
   InsiderTrade,
   PricePoint,
   PriceStats,
+  RiskFlag,
+  ScoreHistoryEntry,
   ScoreOut,
   ScreenerRow,
   TickerDetail,
@@ -32,6 +35,12 @@ export const api = {
   scores: () => request<DashboardRow[]>("/api/scores"),
   ideas: () => request<IdeaRow[]>("/api/ideas"),
   screener: () => request<ScreenerRow[]>("/api/screener"),
+  alerts: (unseenOnly = false) =>
+    request<AlertItem[]>(`/api/alerts?unseen_only=${unseenOnly}`),
+  markAlertsSeen: () => request<{ marked: number }>("/api/alerts/seen", { method: "POST" }),
+  scoreHistory: (ticker: string) =>
+    request<ScoreHistoryEntry[]>(`/api/tickers/${ticker}/score-history`),
+  risks: (ticker: string) => request<RiskFlag[]>(`/api/tickers/${ticker}/risks`),
   aiReport: (ticker: string) => request<AiReport>(`/api/analysis/${ticker}`),
   analyze: (ticker: string) => request<AiReport>(`/api/analysis/${ticker}`, { method: "POST" }),
   stats: (ticker: string) => request<PriceStats>(`/api/tickers/${ticker}/stats`),

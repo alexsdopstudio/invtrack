@@ -5,6 +5,7 @@ export const COMPONENT_META: [key: string, label: string, cssVar: string][] = [
   ["fundamentals", "Fundamentals", "var(--series-1)"],
   ["congress", "Congress", "var(--series-2)"],
   ["insider", "Insider", "var(--series-3)"],
+  ["momentum", "Momentum", "var(--series-4)"],
 ];
 
 // Compact per-component sub-score bars (0-100 scale) with adjacent text

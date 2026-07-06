@@ -14,6 +14,7 @@
   --series-1: #2a78d6; /* fundamentals */
   --series-2: #1baf7a; /* congress */
   --series-3: #eda100; /* insider */
+  --series-4: #008300; /* momentum */
   --div-pos: #2a78d6; /* diverging pole: bullish */
   --div-neg: #e34948; /* diverging pole: bearish */
   --div-mid: #f0efec; /* diverging neutral */
@@ -33,6 +34,7 @@
     --series-1: #3987e5;
     --series-2: #199e70;
     --series-3: #c98500;
+    --series-4: #008300;
     --div-pos: #3987e5;
     --div-neg: #e66767;
     --div-mid: #383835;
@@ -52,6 +54,7 @@
   --color-series-1: var(--series-1);
   --color-series-2: var(--series-2);
   --color-series-3: var(--series-3);
+  --color-series-4: var(--series-4);
   --color-div-pos: var(--div-pos);
   --color-div-neg: var(--div-neg);
   --color-div-mid: var(--div-mid);

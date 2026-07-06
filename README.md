@@ -111,14 +111,34 @@ are idempotent.
 Weights and thresholds live in [`backend/scoring.yaml`](backend/scoring.yaml)
 — tune them freely; this is a research aid, not a black box.
 
-- **Fundamentals (0.40)** — banded sub-scores for revenue growth, operating
+- **Fundamentals (0.35)** — banded sub-scores for revenue growth, operating
   margin, debt/equity, P/E.
-- **Congress (0.35)** — recency-decayed net dollar flow of congressional
+- **Congress (0.30)** — recency-decayed net dollar flow of congressional
   buys vs sells (decay on *disclosure* date, because the data is lagging),
   plus a bonus when ≥3 members trade the same direction within 30 days.
-- **Insider (0.25)** — Form 4 open-market buys minus discounted sells
+- **Insider (0.20)** — Form 4 open-market buys minus discounted sells
   (insider selling is noisy; buying is the signal), with a multi-insider
   cluster bonus.
+- **Momentum (0.15)** — price vs its own 50/200-day moving averages; trend
+  confirmation, not prediction.
+
+Every ticker page also shows a **score timeline** (last computation per day,
+with per-component contribution deltas — "why did my score change"), and
+**risk flags** computed independently of the score: insider selling clusters,
+congressional net selling, price below the 200-day average, deep drawdowns,
+and short cash runway.
+
+## Auto-refresh & alerts
+
+A background scheduler ingests all sources, rescores, and runs alert
+detection daily (`AUTO_REFRESH_ENABLED` / `AUTO_REFRESH_HOUR` in `.env`,
+default 07:00). Alerts fire for: new congressional trades on watchlist
+tickers, new insider Form 4 buys/sells, and composite-score crossings of the
+60/40 bands. They appear in the dashboard's **Activity** feed (with an unread
+badge in the header) and can optionally be pushed to any JSON webhook via
+`ALERT_WEBHOOK_URL` — Slack incoming webhooks, Discord webhooks, and ntfy
+topics all work as-is. Detection is idempotent (each alert is keyed to its
+triggering event), so re-running ingestion never duplicates alerts.
 
 If a component has no data its weight is renormalized across the components
 that do, and the stored breakdown marks it `missing` — a score is never

@@ -3,9 +3,21 @@
 # runtime across the components that actually have data for a ticker.
 
 weights:
-  fundamentals: 0.40
-  congress: 0.35
-  insider: 0.25
+  fundamentals: 0.35
+  congress: 0.30
+  insider: 0.20
+  momentum: 0.15
+
+momentum:
+  # Price vs its own 50/200-day moving averages — trend confirmation, not
+  # prediction. Blend of percent distances, squashed with tanh(blend/scale):
+  # at +/-10% blended distance the signal is ~76% saturated.
+  ma_short: 50
+  ma_long: 200
+  short_weight: 0.6
+  long_weight: 0.4
+  distance_scale: 0.10
+  min_closes: 60   # fewer data points -> component reports missing
 
 congress:
   # Congressional disclosures are legally delayed up to 45 days (STOCK Act),

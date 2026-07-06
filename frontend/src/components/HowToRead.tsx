@@ -2,16 +2,20 @@ import { COMPONENT_META } from "./ComponentBars";
 
 const EXPLANATIONS: Record<string, { weight: string; text: string }> = {
   fundamentals: {
-    weight: "40%",
+    weight: "35%",
     text: "Business quality: revenue growth, margins, debt, valuation (from company financials).",
   },
   congress: {
-    weight: "35%",
+    weight: "30%",
     text: "Are members of Congress buying or selling this stock? From official STOCK Act disclosures — published up to 45 days after the trade, so always lagging.",
   },
   insider: {
-    weight: "25%",
+    weight: "20%",
     text: "Are the company's own executives and directors buying with their own money? From SEC Form 4 filings.",
+  },
+  momentum: {
+    weight: "15%",
+    text: "Is the price above its own 50/200-day averages? Trend confirmation, not prediction.",
   },
 };
 
@@ -31,7 +35,7 @@ export default function HowToRead() {
           <span aria-hidden className="mx-0.5 inline-block h-2 w-2 rounded-full align-baseline" style={{ background: "var(--div-pos)" }} />
           ; below ~40 they lean bearish{" "}
           <span aria-hidden className="mx-0.5 inline-block h-2 w-2 rounded-full align-baseline" style={{ background: "var(--div-neg)" }} />
-          . The score blends three independent signals:
+          . The score blends four independent signals:
         </p>
         <ul className="flex flex-col gap-1.5">
           {COMPONENT_META.map(([key, label, color]) => (

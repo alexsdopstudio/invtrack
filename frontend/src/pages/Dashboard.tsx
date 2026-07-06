@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
+import AlertsPanel from "../components/AlertsPanel";
 import ComponentBars from "../components/ComponentBars";
 import HowToRead from "../components/HowToRead";
 import RadarTable from "../components/RadarTable";
@@ -51,6 +52,8 @@ export default function Dashboard() {
         )}
       </div>
 
+      <AlertsPanel />
+
       <RadarTable />
 
       <section className="flex flex-col gap-2">
@@ -85,6 +88,9 @@ export default function Dashboard() {
                   Why — signal mix
                 </th>
                 <th className="px-3 py-2 font-medium">90d price</th>
+                <th className="px-3 py-2 text-right font-medium" title="Red-flag conditions detected in the data — open the ticker for details">
+                  Risks
+                </th>
                 <th className="px-3 py-2 text-right font-medium">Last close</th>
                 <th className="px-3 py-2 text-right font-medium" title="Most recent congressional trade of this stock">
                   Last congress trade
@@ -111,6 +117,19 @@ export default function Dashboard() {
                   </td>
                   <td className="px-3 py-2">
                     <Sparkline values={r.sparkline} />
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    {r.risk_count > 0 ? (
+                      <Link
+                        to={`/ticker/${r.ticker}`}
+                        className="tnum text-sm hover:underline"
+                        title={`${r.risk_count} risk flag${r.risk_count > 1 ? "s" : ""} — click for details`}
+                      >
+                        ⚠️ {r.risk_count}
+                      </Link>
+                    ) : (
+                      <span className="text-muted">—</span>
+                    )}
                   </td>
                   <td className="px-3 py-2 text-right tnum">
                     {r.last_close != null ? `$${r.last_close.toFixed(2)}` : "—"}

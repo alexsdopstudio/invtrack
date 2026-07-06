@@ -160,6 +160,21 @@ class Score(Base):
     components: Mapped[dict[str, Any]] = mapped_column(JsonCol)
 
 
+class Alert(Base):
+    __tablename__ = "alert"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    ticker: Mapped[str] = mapped_column(String(12), index=True)
+    kind: Mapped[str] = mapped_column(String(24))  # congress_trade | insider_trade | score_cross
+    title: Mapped[str] = mapped_column(String(255))
+    body: Mapped[str] = mapped_column(Text)
+    # natural key of the triggering event — makes detection idempotent
+    dedupe_key: Mapped[str] = mapped_column(String(255), unique=True)
+    seen: Mapped[bool] = mapped_column(default=False)
+    payload: Mapped[dict[str, Any] | None] = mapped_column(JsonCol)
+
+
 class IngestionRun(Base):
     __tablename__ = "ingestion_run"
 

@@ -10,6 +10,7 @@ export interface DashboardRow {
   last_congress_activity: string | null;
   last_insider_activity: string | null;
   sparkline: number[];
+  risk_count: number;
 }
 
 export interface ScoreComponent {
@@ -150,6 +151,33 @@ export interface Health {
   status: string;
   disclaimer: string;
   ai_analysis_enabled: boolean;
+  auto_refresh_enabled: boolean;
+  next_auto_refresh: string | null;
+}
+
+export interface AlertItem {
+  id: number;
+  created_at: string;
+  ticker: string;
+  kind: "congress_trade" | "insider_trade" | "score_cross";
+  title: string;
+  body: string;
+  seen: boolean;
+}
+
+export interface RiskFlag {
+  id: string;
+  severity: "warning" | "serious";
+  label: string;
+  detail: string;
+}
+
+export interface ScoreHistoryEntry {
+  date: string;
+  total: number;
+  contributions: Record<string, number>;
+  deltas: Record<string, number> | null;
+  total_delta: number | null;
 }
 
 export interface IngestionRun {

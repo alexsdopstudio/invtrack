@@ -88,11 +88,14 @@ def dashboard_rows(db: Session) -> list[dict]:
     )
     rows = [dict(r._mapping) for r in db.execute(stmt)]
 
+    from .risk import risk_flags  # local import to avoid a module cycle
+
     sparklines = _sparklines(db, [r["ticker"] for r in rows])
     for r in rows:
         r["sparkline"] = sparklines.get(r["ticker"], [])
         r["score"] = r.pop("total")
         r["score_computed_at"] = r.pop("computed_at")
+        r["risk_count"] = len(risk_flags(db, r["ticker"]))
     return rows
 
 
@@ -234,6 +237,54 @@ def price_stats(db: Session, ticker: str) -> dict[str, Any] | None:
         "first_date": rows[0].date,
         "last_date": rows[-1].date,
     }
+
+
+def score_history(db: Session, ticker: str, days: int = 120) -> list[dict[str, Any]]:
+    """Daily score series (last computation per day) with per-component
+    contribution deltas vs the previous day — answers 'why did my score
+    change' server-side."""
+    since = date.today() - timedelta(days=days)
+    scores = db.scalars(
+        select(Score)
+        .where(Score.ticker == ticker, Score.computed_at >= since)
+        .order_by(Score.computed_at.asc())
+    ).all()
+
+    by_day: dict[date, Score] = {}
+    for s in scores:
+        by_day[s.computed_at.date()] = s  # ascending order -> last per day wins
+
+    entries: list[dict[str, Any]] = []
+    previous: Score | None = None
+    for day in sorted(by_day):
+        s = by_day[day]
+        contributions = {
+            name: comp.get("contribution", 0.0)
+            for name, comp in (s.components or {}).items()
+        }
+        deltas: dict[str, float] | None = None
+        total_delta: float | None = None
+        if previous is not None:
+            prev_contributions = {
+                name: comp.get("contribution", 0.0)
+                for name, comp in (previous.components or {}).items()
+            }
+            deltas = {
+                name: round(contributions.get(name, 0.0) - prev_contributions.get(name, 0.0), 2)
+                for name in set(contributions) | set(prev_contributions)
+            }
+            total_delta = round(s.total - previous.total, 2)
+        entries.append(
+            {
+                "date": day,
+                "total": s.total,
+                "contributions": {k: round(v, 2) for k, v in contributions.items()},
+                "deltas": deltas,
+                "total_delta": total_delta,
+            }
+        )
+        previous = s
+    return entries
 
 
 def latest_score_for(db: Session, ticker: str) -> Score | None:

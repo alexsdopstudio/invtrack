@@ -68,7 +68,7 @@ check "feeds for unknown ticker" 404 GET /api/tickers/ZZZTOP/prices
 echo "--- scores ---"
 check "dashboard scores" 200 GET /api/scores
 jqcheck "4 rows sorted by score desc" "len(d) == 4 and d[0]['ticker'] == 'NVDA' and d[0]['score'] >= d[-1]['score']"
-jqcheck "rows carry sparkline+components" "len(d[0]['sparkline']) > 30 and set(d[0]['components']) == {'fundamentals','congress','insider'}"
+jqcheck "rows carry sparkline+components" "len(d[0]['sparkline']) > 30 and set(d[0]['components']) == {'fundamentals','congress','insider','momentum'}"
 check "score breakdown" 200 GET /api/scores/NVDA
 jqcheck "breakdown provenance complete" "all(c['status']=='ok' and c['source'] and c['data_as_of'] for c in d['components'].values())"
 jqcheck "contributions sum to total" "abs(sum(c['contribution'] for c in d['components'].values()) - d['total']) < 0.1"
@@ -91,6 +91,19 @@ jqcheck "unknown-only ticker present, never silent" "any(r['ticker'] == 'AVGO' a
 check "analysis disabled without key" 400 POST /api/analysis/NVDA
 jqcheck "analysis error is actionable" "'ANTHROPIC_API_KEY' in d['detail']"
 check "no report yet -> 404" 404 GET /api/analysis/NVDA
+
+echo "--- alerts, history & risks ---"
+check "alerts feed" 200 GET /api/alerts
+jqcheck "demo alerts present with kinds" "len(d) >= 3 and all(r['kind'] in ('congress_trade','insider_trade','score_cross') for r in d)"
+check "score history" 200 GET /api/tickers/NVDA/score-history
+jqcheck "history has daily entries with deltas" "len(d) >= 5 and d[-1]['total_delta'] is not None and 'congress' in d[-1]['contributions']"
+check "risk flags" 200 GET /api/tickers/UNH/risks
+jqcheck "UNH shows insider selling cluster" "any(f['id'] == 'insider_selling_cluster' for f in d)"
+check "mark alerts seen" 200 POST /api/alerts/seen
+jqcheck "marked count returned" "d['marked'] >= 0"
+jqcheck_health() { curl -s "$B/api/health" > /tmp/last_body; }
+jqcheck_health
+jqcheck "health reports auto refresh + momentum in scores" "d['auto_refresh_enabled'] in (True, False)"
 
 echo "--- ingest ---"
 check "unknown source" 404 POST /api/ingest/nonsense

@@ -13,13 +13,16 @@ from ..models import (
     FactPrice,
     WatchlistItem,
 )
-from ..queries import latest_score_for, price_stats
+from ..queries import latest_score_for, price_stats, score_history
+from ..risk import risk_flags
 from ..schemas import (
     CongressTradeOut,
     FundamentalsOut,
     InsiderTradeOut,
     PricePoint,
     PriceStats,
+    RiskFlag,
+    ScoreHistoryEntry,
     ScoreOut,
     TickerDetail,
     TickerSearchResult,
@@ -116,6 +119,18 @@ def stats(ticker: str, db: Session = Depends(get_db)):
             404, f"not enough price history for {dim.ticker} — ingest prices first"
         )
     return result
+
+
+@router.get("/{ticker}/score-history", response_model=list[ScoreHistoryEntry])
+def get_score_history(ticker: str, days: int = 120, db: Session = Depends(get_db)):
+    dim = _get_ticker(db, ticker)
+    return score_history(db, dim.ticker, days=days)
+
+
+@router.get("/{ticker}/risks", response_model=list[RiskFlag])
+def get_risks(ticker: str, db: Session = Depends(get_db)):
+    dim = _get_ticker(db, ticker)
+    return risk_flags(db, dim.ticker)
 
 
 @router.get("/{ticker}/prices", response_model=list[PricePoint])

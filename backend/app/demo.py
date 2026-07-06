@@ -3,11 +3,13 @@ through the real parsers/upserts where possible) so the app can be exercised
 end-to-end without network access. Dates are generated relative to today so
 scoring windows always have data. Clearly synthetic — for demo/dev only."""
 
+import copy
 import random
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
+from .alerts import detect_alerts
 from .ingestion.congress import parse_stock_watcher_rows, upsert_trades
 from .ingestion.fundamentals import upsert_snapshot
 from .ingestion.insider import upsert_insider_trades
@@ -192,4 +194,41 @@ def seed_demo(db: Session) -> dict[str, int]:
         counts["prices"] += upsert_prices(db, ticker, rows)
 
     counts["scores"] = len(engine.compute_and_store(db))
+
+    # Backdated score history (past ~4 weeks) so the "why did my score
+    # change" timeline renders offline. Synthesized from the real latest
+    # breakdown with drifting contributions.
+    from .models import Score
+
+    rng2 = random.Random(7)
+    latest_scores = engine.compute_and_store(db)
+    counts["score_history"] = 0
+    for s in latest_scores:
+        drift_total = 0.0
+        for days_ago in range(28, 0, -3):
+            components = copy.deepcopy(s.components)
+            wobble = rng2.uniform(-6, 6) + drift_total
+            drift_total -= rng2.uniform(-1.5, 3.0)  # trend gently toward today's score
+            total = max(0.0, min(100.0, s.total + wobble))
+            scale = total / s.total if s.total else 1.0
+            for comp in components.values():
+                if comp.get("status") == "ok":
+                    comp["contribution"] = round(comp["contribution"] * scale, 2)
+                    comp["score"] = round(min(100.0, comp["score"] * scale), 2)
+            db.add(
+                Score(
+                    ticker=s.ticker,
+                    total=round(total, 2),
+                    components=components,
+                    computed_at=datetime.combine(
+                        date.today() - timedelta(days=days_ago),
+                        time(hour=8),
+                        tzinfo=timezone.utc,
+                    ),
+                )
+            )
+            counts["score_history"] += 1
+    db.commit()
+
+    counts["alerts"] = len(detect_alerts(db))
     return counts

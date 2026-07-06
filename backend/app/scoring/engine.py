@@ -14,12 +14,13 @@ from sqlalchemy.orm import Session
 from ..config import get_scoring_config
 from ..ingestion import targets
 from ..models import Score
-from . import congress, fundamentals, insider
+from . import congress, fundamentals, insider, momentum
 
 COMPONENTS = {
     "fundamentals": fundamentals.compute,
     "congress": congress.compute,
     "insider": insider.compute,
+    "momentum": momentum.compute,
 }
 
 

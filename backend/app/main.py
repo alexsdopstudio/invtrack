@@ -1,9 +1,12 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from . import scheduler
 from .analysis.report import analysis_enabled
 from .config import get_settings
-from .routers import analysis, ideas, ingest, scores, screener, tickers, watchlist
+from .routers import alerts, analysis, ideas, ingest, scores, screener, tickers, watchlist
 
 DISCLAIMER = (
     "InvTrack is a personal research aid, not financial advice. It never issues "
@@ -13,7 +16,14 @@ DISCLAIMER = (
     "disclosures-clerk.house.gov, sec.gov) before acting on them."
 )
 
-app = FastAPI(title="InvTrack", description=DISCLAIMER)
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    scheduler.start()
+    yield
+    scheduler.shutdown()
+
+
+app = FastAPI(title="InvTrack", description=DISCLAIMER, lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -23,6 +33,7 @@ app.add_middleware(
 )
 
 app.include_router(watchlist.router)
+app.include_router(alerts.router)
 app.include_router(ideas.router)
 app.include_router(screener.router)
 app.include_router(analysis.router)
@@ -37,4 +48,6 @@ def health():
         "status": "ok",
         "disclaimer": DISCLAIMER,
         "ai_analysis_enabled": analysis_enabled(),
+        "auto_refresh_enabled": get_settings().auto_refresh_enabled,
+        "next_auto_refresh": scheduler.next_run_time(),
     }

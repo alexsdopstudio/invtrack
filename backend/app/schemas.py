@@ -101,6 +101,7 @@ class DashboardRow(BaseModel):
     last_congress_activity: date | None
     last_insider_activity: date | None
     sparkline: list[float]
+    risk_count: int = 0
 
 
 class TickerDetail(BaseModel):
@@ -167,6 +168,33 @@ class AiReportOut(BaseModel):
     created_at: datetime
     report_md: str
     sections_meta: dict[str, Any] | None
+
+
+class AlertOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    created_at: datetime
+    ticker: str
+    kind: str
+    title: str
+    body: str
+    seen: bool
+
+
+class RiskFlag(BaseModel):
+    id: str
+    severity: str  # warning | serious
+    label: str
+    detail: str
+
+
+class ScoreHistoryEntry(BaseModel):
+    date: date
+    total: float
+    contributions: dict[str, float]
+    deltas: dict[str, float] | None
+    total_delta: float | None
 
 
 class IngestionRunOut(BaseModel):

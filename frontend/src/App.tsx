@@ -1,4 +1,6 @@
+import { useQuery } from "@tanstack/react-query";
 import { Link, NavLink, Route, Routes } from "react-router-dom";
+import { api } from "./api/client";
 import DisclaimerBanner from "./components/DisclaimerBanner";
 import Dashboard from "./pages/Dashboard";
 import ScreenerPage from "./pages/Screener";
@@ -6,6 +8,25 @@ import TickerDetailPage from "./pages/TickerDetail";
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   `rounded-md px-2 py-1 text-sm ${isActive ? "font-semibold text-ink" : "text-ink-2 hover:text-ink"}`;
+
+function UnseenBadge() {
+  const { data: alerts } = useQuery({
+    queryKey: ["alerts"],
+    queryFn: () => api.alerts(),
+    refetchInterval: 60_000,
+  });
+  const unseen = alerts?.filter((a) => !a.seen).length ?? 0;
+  if (unseen === 0) return null;
+  return (
+    <span
+      className="rounded-full px-1.5 text-xs font-semibold tnum"
+      style={{ background: "var(--div-neg)", color: "#fff" }}
+      title={`${unseen} unread alerts — see Activity on the dashboard`}
+    >
+      {unseen}
+    </span>
+  );
+}
 
 export default function App() {
   return (
@@ -19,6 +40,7 @@ export default function App() {
             <NavLink to="/" end className={navClass}>
               Dashboard
             </NavLink>
+            <UnseenBadge />
             <NavLink to="/screener" className={navClass}>
               Screener
             </NavLink>
